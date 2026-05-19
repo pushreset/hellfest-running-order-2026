@@ -2,6 +2,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#000000">
 <title>HELLFEST '26 — Running Order</title>
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HELLFEST '26">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -66,6 +73,11 @@
     letter-spacing: 0.06em;
     line-height: 1;
     display: flex; align-items: center; gap: 8px;
+  }
+  .brand-icon {
+    width: 30px; height: 30px;
+    object-fit: contain;
+    display: block;
   }
   .brand .x { color: var(--red); }
   .brand .y { color: var(--fg-mute); font-size: 13px; font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; }
@@ -295,6 +307,12 @@
   .group-slot .stage-stripe {
     width: 3px; align-self: stretch;
   }
+  .group-slot .slot-row .conflict-tag {
+    align-self: center;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--bg); background: var(--warn);
+    padding: 1px 5px;
+  }
 
   /* ============ ACTION BAR ============ */
   .actionbar {
@@ -474,7 +492,7 @@
 <div id="app">
   <div class="stickytop">
   <header class="topbar">
-    <div class="brand"><span class="x">HELL</span>FEST <span class="y">'26</span></div>
+    <div class="brand"><img class="brand-icon" src="logo.png" alt=""><span class="x">HELL</span>FEST <span class="y">'26</span></div>
     <button id="identity-btn" class="identity">
       <span id="identity-name">MOI</span>
       <span class="dot" id="identity-dot" style="color: #e63946"></span>
@@ -1286,18 +1304,32 @@ function renderPlanning() {
     ));
     return;
   }
-  const group = el('div', { class: 'stage-group' });
+  // Group selected concerts by start-time slot, mirroring the GROUPE view layout
+  const slots = {}; // key: start min, value: { time, concerts: [] }
   for (const c of mine) {
-    const card = concertCard(c, { conflicts });
-    // override left stripe with stage color hint
-    const stage = stageById[c.st];
-    const badge = el('div', { class: 'genre' }, stage.label);
-    // inject stage label into card
-    const middle = card.children[1];
-    if (!card.querySelector('.genre')) middle.appendChild(badge);
-    group.appendChild(card);
+    const key = toMin(c.s);
+    if (!slots[key]) slots[key] = { time: c.s, concerts: [] };
+    slots[key].concerts.push(c);
   }
-  root.appendChild(group);
+  const sortedKeys = Object.keys(slots).map(Number).sort((a,b) => a-b);
+  for (const k of sortedKeys) {
+    const slot = slots[k];
+    const slotEl = el('div', { class: 'group-slot' });
+    slotEl.appendChild(el('div', { class: 'slot-time' }, slot.time));
+    for (const concert of slot.concerts) {
+      const stage = stageById[concert.st];
+      const hasConflict = conflicts.has(concert.id);
+      const row = el('div', { class: 'slot-row' + (hasConflict ? ' conflict' : '') });
+      row.appendChild(el('div', { class: 'stage-stripe', style: { background: stage.color } }));
+      const info = el('div', { class: 'info' });
+      info.appendChild(el('div', { class: 'concert-name' }, concert.n));
+      info.appendChild(el('div', { class: 'concert-meta' }, `${stage.label} · ${concert.s} → ${concert.e}`));
+      row.appendChild(info);
+      if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+      slotEl.appendChild(row);
+    }
+    root.appendChild(slotEl);
+  }
 }
 
 function renderGroup() {
