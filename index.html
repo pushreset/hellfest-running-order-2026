@@ -203,6 +203,11 @@
     text-transform: uppercase; letter-spacing: 0.1em;
     margin-top: 2px;
   }
+  .concert .friends-line {
+    font-size: 10px; color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-top: 2px;
+  }
   .concert .marks {
     display: flex; gap: -4px; align-items: center;
   }
@@ -1237,12 +1242,15 @@ function concertCard(c, opts={}) {
   ));
   const middle = el('div', {});
   middle.appendChild(el('div', { class: 'name' }, c.n));
-  const meta = [];
-  if (c.g) meta.push(c.g);
+  if (c.g) middle.appendChild(el('div', { class: 'genre' }, c.g));
   if (friendsHere.length) {
-    meta.push(`${friendsHere.length} ami${friendsHere.length>1?'s':''}`);
+    const fl = el('div', { class: 'friends-line' });
+    friendsHere.forEach((f, i) => {
+      if (i > 0) fl.appendChild(document.createTextNode(' · '));
+      fl.appendChild(el('span', { style: { color: f.color } }, f.name));
+    });
+    middle.appendChild(fl);
   }
-  if (meta.length) middle.appendChild(el('div', { class: 'genre' }, meta.join(' · ')));
   card.appendChild(middle);
 
   const right = el('div', { class: 'marks' });
@@ -1253,9 +1261,6 @@ function concertCard(c, opts={}) {
       title: 'Infos groupe',
       onClick: (e) => { e.stopPropagation(); showInfo(c, info); }
     }, 'i'));
-  }
-  for (const f of friendsHere) {
-    right.appendChild(el('span', { class: 'mark', style: { background: f.color }, title: f.name }));
   }
   const check = el('div', { class: 'check', html: ICON_CHECK });
   right.appendChild(check);
