@@ -1372,6 +1372,51 @@ function openImport() {
   ]);
 }
 
+// Merge meetpoints from a payload (dedupe by day+time+label). Returns count added.
+function importMeetpoints(payload) {
+  let mpAdded = 0;
+  if (Array.isArray(payload.mp)) {
+    for (const m of payload.mp) {
+      if (!state.meetpoints.some(x => x.day === m.day && x.time === m.time && x.label === m.label)) {
+        state.meetpoints.push({ ...m, id: m.id || (Date.now()+'-'+Math.random()) });
+        mpAdded++;
+      }
+    }
+  }
+  return mpAdded;
+}
+
+// Import the payload as a friend's schedule (shown in GROUPE view)
+function importAsFriend(payload, validIds, dropped) {
+  const idx = state.friends.findIndex(f => f.name.toLowerCase() === payload.n.toLowerCase());
+  const friend = {
+    id: payload.n + '-' + Date.now(),
+    name: payload.n,
+    color: payload.c || '#888',
+    ids: validIds,
+    visible: true,
+    updated: Date.now()
+  };
+  if (idx >= 0) { friend.id = state.friends[idx].id; state.friends[idx] = friend; }
+  else state.friends.push(friend);
+  const mpAdded = importMeetpoints(payload);
+  save();
+  render();
+  toast(`${payload.n} importé · ${validIds.length} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+}
+
+// Import the payload as MY OWN setlist — transfer from another device.
+// mode 'replace' overwrites my selection, 'merge' adds to it.
+function importToMine(payload, validIds, mode, dropped) {
+  if (mode === 'replace') state.selected = new Set(validIds);
+  else for (const id of validIds) state.selected.add(id);
+  const mpAdded = importMeetpoints(payload);
+  save();
+  render();
+  const verb = mode === 'replace' ? 'remplacée' : 'mise à jour';
+  toast(`Setlist ${verb} · ${state.selected.size} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+}
+
 function handlePayload(str) {
   str = (str || '').trim();
   // Accept a full share URL (or any ?d= link), not only raw JSON
@@ -1390,36 +1435,29 @@ function handlePayload(str) {
   // Validate concert IDs
   const validIds = (payload.ids || []).filter(id => concertById[id]);
   const dropped = (payload.ids || []).length - validIds.length;
+  const mpCount = Array.isArray(payload.mp) ? payload.mp.length : 0;
 
-  // Upsert friend by name (case-insensitive)
-  const idx = state.friends.findIndex(f => f.name.toLowerCase() === payload.n.toLowerCase());
-  const friend = {
-    id: payload.n + '-' + Date.now(),
-    name: payload.n,
-    color: payload.c || '#888',
-    ids: validIds,
-    visible: true,
-    updated: Date.now()
-  };
-  if (idx >= 0) {
-    friend.id = state.friends[idx].id;
-    state.friends[idx] = friend;
-  } else {
-    state.friends.push(friend);
-  }
-  // Import meetpoints if any
-  let mpAdded = 0;
-  if (Array.isArray(payload.mp)) {
-    for (const m of payload.mp) {
-      if (!state.meetpoints.some(x => x.day === m.day && x.time === m.time && x.label === m.label)) {
-        state.meetpoints.push({ ...m, id: m.id || (Date.now()+'-'+Math.random()) });
-        mpAdded++;
-      }
-    }
-  }
-  save();
-  render();
-  toast(`${payload.n} importé · ${validIds.length} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+  // Ask: is this a friend's planning, or a transfer of MY own setlist?
+  showModal('IMPORTER', [
+    el('p', {}, `Planning de « ${payload.n} » — ${validIds.length} concert${validIds.length>1?'s':''}${mpCount?' + '+mpCount+' rdv':''}${dropped?' · '+dropped+' inconnu'+(dropped>1?'s':'')+' ignoré'+(dropped>1?'s':''):''}.`),
+    el('label', {}, 'Importer comme'),
+    el('p', {}, 'AMI : son planning s\'ajoute à côté du tien (vue GROUPE). MA SETLIST : c\'est un transfert de TON propre planning depuis un autre appareil.'),
+    el('div', { class: 'btn-row', style: { flexWrap: 'wrap' } },
+      el('button', { class: 'btn', onClick: () => { closeModal(); importAsFriend(payload, validIds, dropped); } }, `Ami : ${payload.n}`),
+      el('button', { class: 'btn primary', onClick: () => { closeModal(); importToMine(payload, validIds, 'merge', dropped); } }, 'Ma setlist — Ajouter'),
+      el('button', {
+        class: 'btn',
+        onClick: () => {
+          if (state.selected.size && !confirm(`Écraser ta setlist actuelle (${state.selected.size} concert${state.selected.size>1?'s':''}) ?`)) return;
+          closeModal();
+          importToMine(payload, validIds, 'replace', dropped);
+        }
+      }, 'Ma setlist — Écraser')
+    ),
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
+    )
+  ]);
 }
 
 function openFriends() {
