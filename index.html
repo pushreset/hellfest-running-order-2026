@@ -328,6 +328,12 @@
   .lineup-mode-toggle {
     display: flex; gap: 0;
     padding: 10px 14px 6px;
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .lineup-filter-group {
+    display: flex; gap: 0;
+    margin-left: auto;
   }
   .lineup-mode-toggle .lm-tab {
     padding: 6px 12px;
@@ -1219,6 +1225,7 @@ let state = {
   view: load('hf_view', 'lineup'),
   day: todayFestivalDay() || load('hf_day', 'thu18'),
   lineupMode: load('hf_lineupMode', 'byStage'),
+  lineupFilter: load('hf_lineupFilter', 'all'),
 };
 
 // Returns festival day id if today matches a festival date, else null.
@@ -1241,6 +1248,7 @@ function save() {
   localStorage.setItem('hf_view', JSON.stringify(state.view));
   localStorage.setItem('hf_day', JSON.stringify(state.day));
   localStorage.setItem('hf_lineupMode', JSON.stringify(state.lineupMode));
+  localStorage.setItem('hf_lineupFilter', JSON.stringify(state.lineupFilter));
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1414,7 +1422,7 @@ function renderLineup() {
   const nowInfo = getNow();
   const showNow = nowInfo && nowInfo.dayId === day;
 
-  // Mode toggle (PAR SCÈNE / PAR HEURE)
+  // Mode toggle (PAR SCÈNE / PAR HEURE) + filter toggle (TOUTES / PRINCIPALES)
   const toggle = el('div', { class: 'lineup-mode-toggle' });
   const mkBtn = (mode, label) => el('button', {
     class: 'lm-tab' + (state.lineupMode === mode ? ' active' : ''),
@@ -1422,10 +1430,21 @@ function renderLineup() {
   }, label);
   toggle.appendChild(mkBtn('byStage', 'PAR SCÈNE'));
   toggle.appendChild(mkBtn('byTime', 'PAR HEURE'));
+  const mkFilter = (f, label) => el('button', {
+    class: 'lm-tab' + (state.lineupFilter === f ? ' active' : ''),
+    onClick: () => { state.lineupFilter = f; save(); render(); }
+  }, label);
+  const filterGroup = el('div', { class: 'lineup-filter-group' });
+  filterGroup.appendChild(mkFilter('all', 'TOUTES'));
+  filterGroup.appendChild(mkFilter('main', 'PRINCIPALES'));
+  toggle.appendChild(filterGroup);
   root.appendChild(toggle);
 
+  // Filter: when 'main', restrict to stages with zone === 'main'
+  const stageAllowed = (stId) => state.lineupFilter !== 'main' || stageById[stId]?.zone === 'main';
+
   if (state.lineupMode === 'byTime') {
-    const concertsOfDay = CONCERTS.filter(c => c.d === day)
+    const concertsOfDay = CONCERTS.filter(c => c.d === day && stageAllowed(c.st))
       .sort((a,b) => toMin(a.s) - toMin(b.s));
     const slots = {};
     for (const c of concertsOfDay) {
@@ -1453,7 +1472,7 @@ function renderLineup() {
   }
 
   // byStage (default)
-  const stagesInDay = STAGES.filter(s => CONCERTS.some(c => c.d === day && c.st === s.id));
+  const stagesInDay = STAGES.filter(s => stageAllowed(s.id) && CONCERTS.some(c => c.d === day && c.st === s.id));
   for (const stage of stagesInDay) {
     const group = el('div', { class: 'stage-group' });
     const header = el('div', { class: 'stage-header' });
