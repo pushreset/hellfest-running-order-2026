@@ -1136,18 +1136,17 @@ let state = {
   user: load('hf_user', { name: 'MOI', color: '#e63946' }),
   selected: new Set(load('hf_selected', [])),
   friends: load('hf_friends', []), // [{id, name, color, ids: [], visible: true}]
-  view: 'lineup',
-  day: pickDefaultDay(),
+  view: load('hf_view', 'lineup'),
+  day: todayFestivalDay() || load('hf_day', 'thu18'),
 };
 
-function pickDefaultDay() {
+// Returns festival day id if today matches a festival date, else null.
+function todayFestivalDay() {
   const today = new Date();
   const yr = today.getFullYear(); const mo = today.getMonth()+1; const dd = today.getDate();
   const todayStr = `${yr}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
   const match = DAYS.find(d => d.date === todayStr);
-  if (match) return match.id;
-  if (todayStr < '2026-06-17') return 'thu18';
-  return 'sun21';
+  return match ? match.id : null;
 }
 
 function load(key, fallback) {
@@ -1158,6 +1157,8 @@ function save() {
   localStorage.setItem('hf_user', JSON.stringify(state.user));
   localStorage.setItem('hf_selected', JSON.stringify([...state.selected]));
   localStorage.setItem('hf_friends', JSON.stringify(state.friends));
+  localStorage.setItem('hf_view', JSON.stringify(state.view));
+  localStorage.setItem('hf_day', JSON.stringify(state.day));
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1200,7 +1201,7 @@ function renderDays() {
     const count = [...state.selected].filter(id => concertById[id]?.d === d.id).length;
     const tab = el('button', {
       class: 'day-tab' + (d.id === state.day ? ' active' : ''),
-      onClick: () => { state.day = d.id; render(); }
+      onClick: () => { state.day = d.id; save(); render(); }
     }, d.label);
     if (count > 0) tab.appendChild(el('span', { class: 'badge' }, String(count)));
     root.appendChild(tab);
@@ -1226,7 +1227,7 @@ function renderStats() {
 function renderViewTabs() {
   $$('.view-tab').forEach(b => {
     b.classList.toggle('active', b.dataset.view === state.view);
-    b.onclick = () => { state.view = b.dataset.view; render(); };
+    b.onclick = () => { state.view = b.dataset.view; save(); render(); };
   });
 }
 
