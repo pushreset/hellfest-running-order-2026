@@ -1551,13 +1551,26 @@ function handlePayload(str) {
     el('p', {}, `Planning de « ${payload.n} » — ${validIds.length} concert${validIds.length>1?'s':''}${dropped?' · '+dropped+' inconnu'+(dropped>1?'s':'')+' ignoré'+(dropped>1?'s':''):''}.`),
     el('label', {}, 'Importer comme'),
     el('p', {}, 'AMI : son planning s\'ajoute à côté du tien (vue GROUPE). MA SETLIST : c\'est un transfert de TON propre planning depuis un autre appareil.'),
+    el('div', { class: 'btn-row' },
+      el('button', {
+        class: 'btn primary',
+        style: { width: '100%' },
+        onClick: () => { closeModal(); importAsFriend(payload, validIds, dropped); }
+      }, `Ami : ${payload.n}`)
+    ),
     el('div', { class: 'btn-row', style: { flexWrap: 'wrap' } },
-      el('button', { class: 'btn', onClick: () => { closeModal(); importAsFriend(payload, validIds, dropped); } }, `Ami : ${payload.n}`),
-      el('button', { class: 'btn primary', onClick: () => { closeModal(); importToMine(payload, validIds, 'merge', dropped); } }, 'Ma setlist — Ajouter'),
       el('button', {
         class: 'btn',
         onClick: () => {
-          if (state.selected.size && !confirm(`Écraser ta setlist actuelle (${state.selected.size} concert${state.selected.size>1?'s':''}) ?`)) return;
+          if (!confirm(`Ajouter ${validIds.length} concert${validIds.length>1?'s':''} à TA setlist ?`)) return;
+          closeModal();
+          importToMine(payload, validIds, 'merge', dropped);
+        }
+      }, 'Ma setlist — Ajouter'),
+      el('button', {
+        class: 'btn',
+        onClick: () => {
+          if (!confirm(`Écraser ta setlist actuelle${state.selected.size?` (${state.selected.size} concert${state.selected.size>1?'s':''})`:''} ?`)) return;
           closeModal();
           importToMine(payload, validIds, 'replace', dropped);
         }
