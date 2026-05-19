@@ -343,13 +343,20 @@
     color: var(--fg); background: var(--bg-3); border-color: var(--line-2);
   }
 
-  /* Lineup byTime time slot */
-  .time-slot { padding: 4px 0 8px; }
-  .time-slot .slot-time {
-    font-family: var(--display); font-size: 18px;
-    color: var(--fg-mute); letter-spacing: 0.08em;
-    padding: 6px 14px 4px;
+  /* Lineup byTime: clickable slot-row variant (selection + check) */
+  .group-slot .lineup-row { cursor: pointer; }
+  .group-slot .lineup-row.selected { background: rgba(230,57,70,0.08); }
+  .group-slot .lineup-row.conflict { background: rgba(252,191,73,0.10); }
+  .group-slot .lineup-row .check {
+    width: 20px; height: 20px; border: 2px solid var(--line-2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
   }
+  .group-slot .lineup-row .check svg { width: 12px; height: 12px; display: none; }
+  .group-slot .lineup-row.selected .check {
+    background: var(--red); border-color: var(--red); color: var(--bg);
+  }
+  .group-slot .lineup-row.selected .check svg { display: block; }
 
   /* ============ NOW line ============ */
   .now-line {
@@ -1354,6 +1361,51 @@ function concertCard(c, opts={}) {
   return card;
 }
 
+// Row used by the lineup "PAR HEURE" mode — mirrors planning/group slot-row
+// (vertical stage-color stripe + info) but is clickable to toggle selection.
+function lineupTimeRow(c, opts = {}) {
+  const conflicts = opts.conflicts || new Set();
+  const selected = state.selected.has(c.id);
+  const friendsHere = state.friends.filter(f => f.visible !== false && f.ids?.includes(c.id));
+  const stage = stageById[c.st];
+  const hasConflict = selected && conflicts.has(c.id);
+  const row = el('div', {
+    class: 'slot-row lineup-row' + (selected ? ' selected' : '') + (hasConflict ? ' conflict' : ''),
+    onClick: () => {
+      if (state.selected.has(c.id)) state.selected.delete(c.id);
+      else state.selected.add(c.id);
+      save(); render();
+    }
+  });
+  row.appendChild(el('div', { class: 'stage-stripe', style: { background: stage.color } }));
+  const info = el('div', { class: 'info' });
+  info.appendChild(el('div', { class: 'concert-name' }, c.n));
+  const metaParts = [`${stage.label} · ${c.s} → ${c.e}`];
+  if (c.g) metaParts.push(c.g);
+  info.appendChild(el('div', { class: 'concert-meta' }, metaParts.join(' · ')));
+  if (friendsHere.length) {
+    const fl = el('div', { class: 'friends-line' });
+    friendsHere.forEach((f, i) => {
+      if (i > 0) fl.appendChild(document.createTextNode(' · '));
+      fl.appendChild(el('span', { style: { color: f.color } }, f.name));
+    });
+    info.appendChild(fl);
+  }
+  row.appendChild(info);
+  if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+  const infoData = INFO[c.n];
+  if (infoData) {
+    row.appendChild(el('button', {
+      class: 'info-btn',
+      title: 'Infos groupe',
+      onClick: (e) => { e.stopPropagation(); showInfo(c, infoData); }
+    }, 'i'));
+  }
+  const check = el('div', { class: 'check', html: ICON_CHECK });
+  row.appendChild(check);
+  return row;
+}
+
 function renderLineup() {
   const root = $('#content');
   root.innerHTML = '';
@@ -1389,10 +1441,10 @@ function renderLineup() {
         nowInserted = true;
       }
       const slot = slots[k];
-      const slotEl = el('div', { class: 'time-slot' });
+      const slotEl = el('div', { class: 'group-slot' });
       slotEl.appendChild(el('div', { class: 'slot-time' }, slot.time));
       for (const c of slot.concerts) {
-        slotEl.appendChild(concertCard(c, { conflicts }));
+        slotEl.appendChild(lineupTimeRow(c, { conflicts }));
       }
       root.appendChild(slotEl);
     }
@@ -1400,8 +1452,7 @@ function renderLineup() {
     return;
   }
 
-  // byStage (default): one NOW banner at top, stages keep their existing layout
-  if (showNow) root.appendChild(nowLineEl(nowInfo.hm));
+  // byStage (default)
   const stagesInDay = STAGES.filter(s => CONCERTS.some(c => c.d === day && c.st === s.id));
   for (const stage of stagesInDay) {
     const group = el('div', { class: 'stage-group' });
