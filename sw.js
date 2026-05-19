@@ -2,7 +2,7 @@
 // Precache shell + runtime cache for cross-origin (fonts, QR lib).
 // Bump CACHE_VERSION to force clients to refresh.
 
-const CACHE_VERSION = 'hf26-v1';
+const CACHE_VERSION = 'hf26-v2';
 const SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 
@@ -11,6 +11,8 @@ const SHELL_ASSETS = [
   './index.html',
   './manifest.webmanifest',
   './logo.png',
+  './icon-192.png',
+  './icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
