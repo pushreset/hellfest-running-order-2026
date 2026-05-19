@@ -313,6 +313,16 @@
     color: var(--bg); background: var(--warn);
     padding: 1px 5px;
   }
+  .group-slot .slot-row .info-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--line-2);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-size: 14px;
+    color: var(--fg-mute);
+    flex-shrink: 0;
+  }
+  .group-slot .slot-row .info-btn:hover { color: var(--fg); border-color: var(--fg-mute); }
 
   /* ============ ACTION BAR ============ */
   .actionbar {
@@ -1335,6 +1345,8 @@ function renderPlanning() {
       }
       row.appendChild(info);
       if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+      const ib = infoButton(concert);
+      if (ib) row.appendChild(ib);
       slotEl.appendChild(row);
     }
     root.appendChild(slotEl);
@@ -1397,6 +1409,8 @@ function renderGroup() {
       });
       info.appendChild(fl);
       row.appendChild(info);
+      const ib = infoButton(concert);
+      if (ib) row.appendChild(ib);
       slotEl.appendChild(row);
     }
     root.appendChild(slotEl);
@@ -1432,6 +1446,16 @@ function showModal(title, body) {
 }
 function closeModal() {
   $('#modal-root').innerHTML = '';
+}
+
+function infoButton(c) {
+  const info = INFO[c.n];
+  if (!info) return null;
+  return el('button', {
+    class: 'info-btn',
+    title: 'Infos groupe',
+    onClick: (e) => { e.stopPropagation(); showInfo(c, info); }
+  }, 'i');
 }
 
 function showInfo(c, info) {
