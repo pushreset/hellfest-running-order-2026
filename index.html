@@ -266,7 +266,7 @@
   /* ============ ACTION BAR ============ */
   .actionbar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-    display: grid; grid-template-columns: repeat(4, 1fr) 1.2fr;
+    display: grid; grid-template-columns: 1fr 1.2fr;
     background: var(--bg);
     border-top: 1px solid var(--line-2);
     padding-bottom: env(safe-area-inset-bottom);
@@ -380,29 +380,6 @@
     max-height: 80px; overflow-y: auto;
   }
 
-  /* Scan area */
-  .scan-box {
-    background: var(--bg-2);
-    border: 1px solid var(--line-2);
-    aspect-ratio: 1/1;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 12px;
-  }
-  .scan-box video {
-    width: 100%; height: 100%; object-fit: cover;
-  }
-  .scan-box .overlay {
-    position: absolute; inset: 12%;
-    border: 2px solid var(--red);
-    box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
-    pointer-events: none;
-  }
-  .scan-status {
-    font-size: 11px; color: var(--fg-mute);
-    text-align: center; padding: 4px 0;
-  }
-
   /* Friends list */
   .friend-row {
     display: flex; align-items: center; gap: 10px;
@@ -432,19 +409,6 @@
     transition: transform 0.15s;
   }
   .friend-toggle.on::after { transform: translateX(16px); background: var(--bg); }
-
-  /* Meetpoints */
-  .mp-row {
-    display: grid; grid-template-columns: 60px 1fr auto;
-    align-items: center; gap: 10px;
-    padding: 10px 0;
-    border-top: 1px solid var(--line);
-  }
-  .mp-row:first-of-type { border-top: none; }
-  .mp-row .when { font-family: var(--display); font-size: 16px; color: var(--gold); letter-spacing: 0.05em; }
-  .mp-row .what .l { font-weight: 700; font-size: 13px; }
-  .mp-row .what .n { font-size: 11px; color: var(--fg-mute); }
-  .mp-row .x { color: var(--fg-mute); padding: 4px; font-size: 14px; }
 
   /* Misc */
   .empty-state { padding: 40px 20px; text-align: center; color: var(--fg-mute); font-size: 12px; }
@@ -489,16 +453,12 @@
   <main class="content" id="content"></main>
   <footer class="actionbar">
     <button id="btn-friends"><span class="icon">◉</span>AMIS</button>
-    <button id="btn-meetpoints"><span class="icon">✕</span>RDV</button>
-    <button id="btn-scan"><span class="icon">⬚</span>SCAN</button>
-    <button id="btn-import"><span class="icon">↓</span>COLLER</button>
     <button id="btn-qr" class="primary"><span class="icon">▦</span>MON QR</button>
   </footer>
 </div>
 <div id="modal-root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
 
 <script>
 /* ============ DATA (injected below by build) ============ */
@@ -923,7 +883,6 @@ let state = {
   user: load('hf_user', { name: 'MOI', color: '#e63946' }),
   selected: new Set(load('hf_selected', [])),
   friends: load('hf_friends', []), // [{id, name, color, ids: [], visible: true}]
-  meetpoints: load('hf_meetpoints', []), // [{id, day, time, label, note}]
   view: 'lineup',
   day: pickDefaultDay(),
 };
@@ -946,7 +905,6 @@ function save() {
   localStorage.setItem('hf_user', JSON.stringify(state.user));
   localStorage.setItem('hf_selected', JSON.stringify([...state.selected]));
   localStorage.setItem('hf_friends', JSON.stringify(state.friends));
-  localStorage.setItem('hf_meetpoints', JSON.stringify(state.meetpoints));
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1199,11 +1157,6 @@ function showModal(title, body) {
 }
 function closeModal() {
   $('#modal-root').innerHTML = '';
-  // stop any camera stream
-  if (window.__scanStream) {
-    window.__scanStream.getTracks().forEach(t => t.stop());
-    window.__scanStream = null;
-  }
 }
 
 function openIdentity() {
@@ -1247,7 +1200,7 @@ function openIdentity() {
 // Public app URL — scanning the QR opens this and auto-imports via ?d=
 const SHARE_BASE = 'https://pushreset.github.io/hellfest-running-order-2026/';
 
-// UTF-8 safe base64url (handles accents in names / meetpoints)
+// UTF-8 safe base64url (handles accents in names)
 function b64urlEncode(str) {
   return btoa(unescape(encodeURIComponent(str)))
     .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
@@ -1262,8 +1215,7 @@ function buildPayload() {
     t: 'sched',
     n: state.user.name,
     c: state.user.color,
-    ids: [...state.selected],
-    mp: state.meetpoints
+    ids: [...state.selected]
   };
 }
 
@@ -1280,9 +1232,9 @@ function openQR() {
   const qrBox = el('div', { class: 'qr-box', html: svgStr });
 
   showModal('MON QR', [
-    el('p', {}, `Partage ton planning : tes potes scannent ce code (appareil photo ou "SCAN"), le site s'ouvre et importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}${payload.mp.length?' + '+payload.mp.length+' rdv':''}.`),
+    el('p', {}, `Partage ton planning : tes potes scannent ce code avec l'appareil photo, le site s'ouvre et importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}.`),
     qrBox,
-    el('label', {}, 'Ou copie-colle ce lien (à ouvrir, ou coller dans "COLLER")'),
+    el('label', {}, 'Ou copie-colle ce lien (à ouvrir dans un navigateur)'),
     el('div', { class: 'qr-payload' }, shareUrl),
     el('div', { class: 'btn-row' },
       el('button', {
@@ -1295,95 +1247,6 @@ function openQR() {
       el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
     )
   ]);
-}
-
-async function openScan() {
-  const video = el('video', { autoplay: true, muted: true, playsinline: true });
-  const status = el('div', { class: 'scan-status' }, 'Initialisation caméra…');
-  const box = el('div', { class: 'scan-box' });
-  box.appendChild(video);
-  box.appendChild(el('div', { class: 'overlay' }));
-
-  showModal('SCAN QR', [
-    el('p', {}, 'Pointe la caméra vers le QR d\'un ami. La caméra nécessite HTTPS (ou localhost).'),
-    box,
-    status,
-    el('div', { class: 'btn-row' },
-      el('button', { class: 'btn', onClick: () => { closeModal(); openImport(); } }, 'Coller le texte à la place'),
-      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
-    )
-  ]);
-
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
-    });
-    window.__scanStream = stream;
-    video.srcObject = stream;
-    await video.play();
-    status.textContent = 'Scan en cours…';
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    let last = 0;
-    function tick(ts) {
-      if (!document.body.contains(video)) return;
-      if (ts - last < 200) { requestAnimationFrame(tick); return; }
-      last = ts;
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.drawImage(video, 0, 0);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(data.data, data.width, data.height);
-        if (code) {
-          stream.getTracks().forEach(t => t.stop());
-          window.__scanStream = null;
-          closeModal();
-          handlePayload(code.data);
-          return;
-        }
-      }
-      requestAnimationFrame(tick);
-    }
-    requestAnimationFrame(tick);
-  } catch (err) {
-    status.textContent = 'Caméra inaccessible. Utilise "Coller le texte" à la place.';
-    status.style.color = 'var(--warn)';
-  }
-}
-
-function openImport() {
-  const ta = el('textarea', { placeholder: 'Colle ici le texte du QR d\'un ami…' });
-  showModal('COLLER UN PLANNING', [
-    el('p', {}, 'Si tu ne peux pas scanner, demande à ton pote de copier le texte de son QR et colle-le ici.'),
-    ta,
-    el('div', { class: 'btn-row' },
-      el('button', {
-        class: 'btn primary',
-        onClick: () => {
-          const v = ta.value.trim();
-          if (!v) return;
-          closeModal();
-          handlePayload(v);
-        }
-      }, 'Importer'),
-      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
-    )
-  ]);
-}
-
-// Merge meetpoints from a payload (dedupe by day+time+label). Returns count added.
-function importMeetpoints(payload) {
-  let mpAdded = 0;
-  if (Array.isArray(payload.mp)) {
-    for (const m of payload.mp) {
-      if (!state.meetpoints.some(x => x.day === m.day && x.time === m.time && x.label === m.label)) {
-        state.meetpoints.push({ ...m, id: m.id || (Date.now()+'-'+Math.random()) });
-        mpAdded++;
-      }
-    }
-  }
-  return mpAdded;
 }
 
 // Import the payload as a friend's schedule (shown in GROUPE view)
@@ -1399,10 +1262,9 @@ function importAsFriend(payload, validIds, dropped) {
   };
   if (idx >= 0) { friend.id = state.friends[idx].id; state.friends[idx] = friend; }
   else state.friends.push(friend);
-  const mpAdded = importMeetpoints(payload);
   save();
   render();
-  toast(`${payload.n} importé · ${validIds.length} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+  toast(`${payload.n} importé · ${validIds.length} concerts${dropped?' · '+dropped+' inconnus':''}`);
 }
 
 // Import the payload as MY OWN setlist — transfer from another device.
@@ -1410,11 +1272,10 @@ function importAsFriend(payload, validIds, dropped) {
 function importToMine(payload, validIds, mode, dropped) {
   if (mode === 'replace') state.selected = new Set(validIds);
   else for (const id of validIds) state.selected.add(id);
-  const mpAdded = importMeetpoints(payload);
   save();
   render();
   const verb = mode === 'replace' ? 'remplacée' : 'mise à jour';
-  toast(`Setlist ${verb} · ${state.selected.size} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+  toast(`Setlist ${verb} · ${state.selected.size} concerts${dropped?' · '+dropped+' inconnus':''}`);
 }
 
 function handlePayload(str) {
@@ -1435,11 +1296,10 @@ function handlePayload(str) {
   // Validate concert IDs
   const validIds = (payload.ids || []).filter(id => concertById[id]);
   const dropped = (payload.ids || []).length - validIds.length;
-  const mpCount = Array.isArray(payload.mp) ? payload.mp.length : 0;
 
   // Ask: is this a friend's planning, or a transfer of MY own setlist?
   showModal('IMPORTER', [
-    el('p', {}, `Planning de « ${payload.n} » — ${validIds.length} concert${validIds.length>1?'s':''}${mpCount?' + '+mpCount+' rdv':''}${dropped?' · '+dropped+' inconnu'+(dropped>1?'s':'')+' ignoré'+(dropped>1?'s':''):''}.`),
+    el('p', {}, `Planning de « ${payload.n} » — ${validIds.length} concert${validIds.length>1?'s':''}${dropped?' · '+dropped+' inconnu'+(dropped>1?'s':'')+' ignoré'+(dropped>1?'s':''):''}.`),
     el('label', {}, 'Importer comme'),
     el('p', {}, 'AMI : son planning s\'ajoute à côté du tien (vue GROUPE). MA SETLIST : c\'est un transfert de TON propre planning depuis un autre appareil.'),
     el('div', { class: 'btn-row', style: { flexWrap: 'wrap' } },
@@ -1466,7 +1326,7 @@ function openFriends() {
   if (state.friends.length === 0) {
     body.push(el('div', { class: 'empty-state' },
       el('div', { class: 'big' }, 'SEUL.'),
-      el('div', {}, 'Scanne un QR ou colle un planning pour ajouter un pote.')
+      el('div', {}, 'Ouvre le lien QR d\'un pote pour l\'ajouter.')
     ));
   }
   for (const f of state.friends) {
@@ -1502,81 +1362,10 @@ function openFriends() {
   showModal('AMIS', body);
 }
 
-function openMeetpoints() {
-  const body = [];
-  body.push(el('p', {}, 'Points de rendez-vous : un horaire, un lieu sur le site (Mainstage, Cardinal Tap, Camping etc), une note optionnelle. Partagés via ton QR.'));
-
-  // List existing
-  for (const mp of state.meetpoints) {
-    const day = dayById[mp.day];
-    const row = el('div', { class: 'mp-row' });
-    row.appendChild(el('div', { class: 'when' }, `${day?day.label:'?'}\n${mp.time}`));
-    const what = el('div', { class: 'what' });
-    what.appendChild(el('div', { class: 'l' }, mp.label));
-    if (mp.note) what.appendChild(el('div', { class: 'n' }, mp.note));
-    row.appendChild(what);
-    row.appendChild(el('button', {
-      class: 'x',
-      onClick: () => {
-        state.meetpoints = state.meetpoints.filter(x => x.id !== mp.id);
-        save(); openMeetpoints();
-      }
-    }, '✕'));
-    body.push(row);
-  }
-  if (state.meetpoints.length === 0) {
-    body.push(el('div', { class: 'empty-state' },
-      el('div', { class: 'big' }, 'AUCUN RDV.'),
-      el('div', {}, 'Ajoute ton premier ci-dessous.')
-    ));
-  }
-
-  // Form
-  body.push(el('label', {}, 'Nouveau RDV'));
-  const daySel = el('select', { style: { background: 'var(--bg-2)', color: 'var(--fg)', padding: '8px', border: '1px solid var(--line-2)', fontFamily: 'var(--mono)', fontSize: '13px', width: '100%' } });
-  for (const d of DAYS) {
-    const opt = el('option', { value: d.id }, d.label + ' — ' + d.full);
-    if (d.id === state.day) opt.selected = true;
-    daySel.appendChild(opt);
-  }
-  const timeIn = el('input', { type: 'text', placeholder: '20:00', maxlength: 5 });
-  const labelIn = el('input', { type: 'text', placeholder: 'Devant le Hellstage' });
-  const noteIn = el('textarea', { placeholder: 'Note optionnelle (covoiturage, qui apporte quoi…)' });
-  body.push(daySel);
-  body.push(el('label', {}, 'Heure'));
-  body.push(timeIn);
-  body.push(el('label', {}, 'Lieu / titre'));
-  body.push(labelIn);
-  body.push(el('label', {}, 'Note (optionnel)'));
-  body.push(noteIn);
-  body.push(el('div', { class: 'btn-row' },
-    el('button', {
-      class: 'btn primary',
-      onClick: () => {
-        if (!labelIn.value.trim() || !timeIn.value.trim()) { toast('Heure et lieu requis'); return; }
-        state.meetpoints.push({
-          id: Date.now()+'-'+Math.random().toString(36).slice(2,6),
-          day: daySel.value,
-          time: timeIn.value.trim(),
-          label: labelIn.value.trim(),
-          note: noteIn.value.trim() || undefined
-        });
-        save(); openMeetpoints();
-      }
-    }, 'Ajouter'),
-    el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
-  ));
-
-  showModal('POINTS DE RDV', body);
-}
-
 // ---------- Wire up ----------
 $('#identity-btn').onclick = openIdentity;
 $('#btn-qr').onclick = openQR;
-$('#btn-scan').onclick = openScan;
-$('#btn-import').onclick = openImport;
 $('#btn-friends').onclick = openFriends;
-$('#btn-meetpoints').onclick = openMeetpoints;
 
 // First-launch identity
 if (!localStorage.getItem('hf_user')) {
