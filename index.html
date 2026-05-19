@@ -324,6 +324,24 @@
   }
   .group-slot .slot-row .info-btn:hover { color: var(--fg); border-color: var(--fg-mute); }
 
+  /* ============ NOW line ============ */
+  .now-line {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 14px;
+    background: linear-gradient(90deg, rgba(230,57,70,0.18), rgba(230,57,70,0.04));
+    border-top: 2px solid var(--red);
+    border-bottom: 2px solid var(--red);
+  }
+  .now-line .now-label {
+    font-family: var(--display); font-size: 13px; font-weight: 700;
+    color: var(--red); letter-spacing: 0.14em;
+  }
+  .now-line .now-time {
+    font-family: var(--display); font-size: 14px;
+    color: var(--fg); letter-spacing: 0.08em;
+    margin-left: auto;
+  }
+
   /* ============ ACTION BAR ============ */
   .actionbar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
@@ -1123,6 +1141,34 @@ function toMin(t) {
 }
 function fmtRange(s, e) { return `${s}\n${e}`; }
 
+// Current "now" position for the timeline.
+// Returns { dayId, min, hm } if now falls on a festival day, else null.
+// Test override: append ?now=fri19@14:30 to the URL to fake current time.
+function getNow() {
+  const params = new URL(location.href).searchParams;
+  const override = params.get('now');
+  if (override && override.includes('@')) {
+    const [dayId, hm] = override.split('@');
+    if (dayById[dayId] && /^\d{1,2}:\d{2}$/.test(hm)) {
+      return { dayId, min: toMin(hm), hm };
+    }
+  }
+  const now = new Date();
+  const yr = now.getFullYear(), mo = now.getMonth()+1, dd = now.getDate();
+  const todayStr = `${yr}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+  const d = DAYS.find(x => x.date === todayStr);
+  if (!d) return null;
+  const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  return { dayId: d.id, min: toMin(hm), hm };
+}
+
+function nowLineEl(hm) {
+  return el('div', { class: 'now-line' },
+    el('span', { class: 'now-label' }, '● NOW'),
+    el('span', { class: 'now-time' }, hm)
+  );
+}
+
 // Stage / day lookups
 const dayById = Object.fromEntries(DAYS.map(d => [d.id, d]));
 const stageById = Object.fromEntries(STAGES.map(s => [s.id, s]));
@@ -1323,7 +1369,14 @@ function renderPlanning() {
     slots[key].concerts.push(c);
   }
   const sortedKeys = Object.keys(slots).map(Number).sort((a,b) => a-b);
+  const nowInfo = getNow();
+  const showNow = nowInfo && nowInfo.dayId === day;
+  let nowInserted = false;
   for (const k of sortedKeys) {
+    if (showNow && !nowInserted && nowInfo.min < k) {
+      root.appendChild(nowLineEl(nowInfo.hm));
+      nowInserted = true;
+    }
     const slot = slots[k];
     const slotEl = el('div', { class: 'group-slot' });
     slotEl.appendChild(el('div', { class: 'slot-time' }, slot.time));
@@ -1352,6 +1405,7 @@ function renderPlanning() {
     }
     root.appendChild(slotEl);
   }
+  if (showNow && !nowInserted) root.appendChild(nowLineEl(nowInfo.hm));
 }
 
 function renderGroup() {
@@ -1384,7 +1438,14 @@ function renderGroup() {
     ));
     return;
   }
+  const nowInfo = getNow();
+  const showNow = nowInfo && nowInfo.dayId === day;
+  let nowInserted = false;
   for (const k of sortedKeys) {
+    if (showNow && !nowInserted && nowInfo.min < k) {
+      root.appendChild(nowLineEl(nowInfo.hm));
+      nowInserted = true;
+    }
     const slot = slots[k];
     // Group items by concert
     const byConcert = {};
@@ -1416,6 +1477,7 @@ function renderGroup() {
     }
     root.appendChild(slotEl);
   }
+  if (showNow && !nowInserted) root.appendChild(nowLineEl(nowInfo.hm));
 }
 
 function render() {
