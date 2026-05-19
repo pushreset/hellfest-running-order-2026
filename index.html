@@ -1,0 +1,1539 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>HELLFEST '26 — Running Order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --bg-2: #131313;
+    --bg-3: #1c1c1c;
+    --fg: #ededea;
+    --fg-mute: #7a7a78;
+    --fg-dim: #4a4a48;
+    --line: #2a2a28;
+    --line-2: #3a3a38;
+    --red: #e63946;
+    --red-deep: #9d1418;
+    --gold: #f5b400;
+    --warn: #fcbf49;
+    --green: #84cc16;
+    --display: 'Anton', 'Impact', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--fg); font-family: var(--mono); font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+  body {
+    min-height: 100vh;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(230,57,70,0.08), transparent 50%),
+      radial-gradient(circle at 80% 90%, rgba(245,180,0,0.04), transparent 50%);
+    background-attachment: fixed;
+  }
+  /* grain overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+  }
+
+  button { font-family: inherit; cursor: pointer; background: none; border: none; color: inherit; padding: 0; }
+  input, textarea { font-family: inherit; }
+  ::selection { background: var(--red); color: var(--bg); }
+
+  /* ============ TOPBAR ============ */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px 8px;
+    background: linear-gradient(180deg, var(--bg) 0%, rgba(10,10,10,0.95) 80%, rgba(10,10,10,0) 100%);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand {
+    font-family: var(--display);
+    font-size: 28px;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .brand .x { color: var(--red); }
+  .brand .y { color: var(--fg-mute); font-size: 13px; font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; }
+  .identity {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 10px;
+    border: 1px solid var(--line-2);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .identity .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 1px var(--bg), 0 0 0 2px currentColor; }
+
+  /* ============ DAY TABS ============ */
+  .days {
+    display: flex; gap: 0;
+    padding: 0 8px 0;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky; top: 56px; z-index: 40;
+  }
+  .days::-webkit-scrollbar { display: none; }
+  .day-tab {
+    padding: 12px 14px 10px;
+    font-family: var(--display);
+    font-size: 17px;
+    letter-spacing: 0.08em;
+    color: var(--fg-mute);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+    position: relative;
+  }
+  .day-tab .badge {
+    display: inline-block; margin-left: 6px;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
+    background: var(--red); color: var(--bg);
+    padding: 1px 5px; border-radius: 2px; vertical-align: 2px;
+  }
+  .day-tab.active { color: var(--fg); border-bottom-color: var(--red); }
+  .day-tab:hover { color: var(--fg); }
+
+  /* ============ VIEW TOGGLE ============ */
+  .viewbar {
+    display: flex; align-items: center; gap: 0;
+    padding: 8px 14px 8px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    background: var(--bg);
+    position: sticky; top: 100px; z-index: 30;
+  }
+  .view-tab {
+    padding: 8px 12px;
+    color: var(--fg-mute);
+    border: 1px solid var(--line);
+    border-right: none;
+  }
+  .view-tab:last-of-type { border-right: 1px solid var(--line); }
+  .view-tab.active { color: var(--fg); background: var(--bg-3); border-color: var(--line-2); }
+  .stats { margin-left: auto; color: var(--fg-mute); font-size: 11px; }
+  .stats .count { color: var(--red); font-weight: 700; }
+
+  /* ============ MAIN CONTENT ============ */
+  .content { padding: 12px 0 12px; }
+
+  /* Stage group header */
+  .stage-group { margin-bottom: 18px; }
+  .stage-header {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 4px 14px 6px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 4px;
+  }
+  .stage-header .name {
+    font-family: var(--display);
+    font-size: 20px;
+    letter-spacing: 0.08em;
+  }
+  .stage-header .zone {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+    color: var(--fg-dim);
+    text-transform: uppercase;
+  }
+  .stage-header .stripe {
+    width: 24px; height: 4px;
+  }
+
+  /* Concert row */
+  .concert {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .concert:hover { background: var(--bg-2); }
+  .concert.selected { background: rgba(230,57,70,0.08); }
+  .concert.selected::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--red);
+  }
+  .concert.conflict::after {
+    content: 'CONFLIT'; position: absolute; top: 10px; right: 14px;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em;
+    color: var(--bg); background: var(--warn);
+    padding: 1px 5px;
+  }
+  .concert .time {
+    font-family: var(--mono); font-size: 12px; font-weight: 500;
+    color: var(--fg-mute);
+    line-height: 1.3;
+  }
+  .concert .time .start { color: var(--fg); font-weight: 700; }
+  .concert .name {
+    font-family: var(--display);
+    font-size: 17px;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+  .concert.selected .name { color: var(--fg); }
+  .concert .genre {
+    font-size: 10px; color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-top: 2px;
+  }
+  .concert .marks {
+    display: flex; gap: -4px; align-items: center;
+  }
+  .concert .mark {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid var(--bg);
+    margin-left: -4px;
+    background: var(--fg);
+  }
+  .concert .mark.me { background: var(--red); }
+  .concert .check {
+    width: 20px; height: 20px; border: 2px solid var(--line-2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .concert.selected .check { background: var(--red); border-color: var(--red); color: var(--bg); }
+  .concert .check svg { width: 12px; height: 12px; display: none; }
+  .concert.selected .check svg { display: block; }
+
+  /* ============ PLANNING (selected) view ============ */
+  .planning-empty {
+    padding: 60px 24px; text-align: center; color: var(--fg-mute);
+    font-size: 13px;
+  }
+  .planning-empty .big {
+    font-family: var(--display); font-size: 28px; color: var(--fg-dim);
+    margin-bottom: 12px; letter-spacing: 0.06em;
+  }
+
+  /* ============ GROUP view ============ */
+  .group-slot {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .group-slot .slot-time {
+    font-family: var(--display); font-size: 18px;
+    color: var(--fg-mute); letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .group-slot .slot-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0;
+    border-top: 1px dashed var(--line);
+  }
+  .group-slot .slot-row:first-of-type { border-top: none; }
+  .group-slot .avatars { display: flex; }
+  .group-slot .avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid var(--bg);
+    margin-left: -6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    color: var(--bg);
+    text-transform: uppercase;
+  }
+  .group-slot .avatar:first-of-type { margin-left: 0; }
+  .group-slot .info { flex: 1; min-width: 0; }
+  .group-slot .concert-name {
+    font-family: var(--display); font-size: 15px; letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+  .group-slot .concert-meta {
+    font-size: 10px; color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    margin-top: 2px;
+  }
+  .group-slot .stage-stripe {
+    width: 3px; align-self: stretch;
+  }
+
+  /* ============ ACTION BAR ============ */
+  .actionbar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+    display: grid; grid-template-columns: repeat(4, 1fr) 1.2fr;
+    background: var(--bg);
+    border-top: 1px solid var(--line-2);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .actionbar button {
+    padding: 12px 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-mute);
+    border-right: 1px solid var(--line);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .actionbar button:last-child { border-right: none; }
+  .actionbar button .icon { font-size: 18px; line-height: 1; }
+  .actionbar button.primary { background: var(--red); color: var(--bg); }
+  .actionbar button.primary .icon { color: var(--bg); }
+
+  /* ============ MODAL ============ */
+  .modal-back {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal {
+    background: var(--bg);
+    border: 1px solid var(--line-2);
+    max-width: 420px; width: 100%;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    position: relative;
+  }
+  .modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-head h2 {
+    font-family: var(--display); font-size: 22px; letter-spacing: 0.06em;
+  }
+  .modal-close {
+    width: 28px; height: 28px; border: 1px solid var(--line-2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .modal-body { padding: 16px; }
+  .modal-body p { color: var(--fg-mute); font-size: 12px; margin-bottom: 10px; }
+  .modal-body label {
+    display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--fg-mute);
+    margin-bottom: 6px; margin-top: 12px;
+  }
+  .modal-body input[type=text] {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    color: var(--fg); font-size: 14px;
+    outline: none;
+  }
+  .modal-body input[type=text]:focus { border-color: var(--red); }
+  .modal-body textarea {
+    width: 100%; padding: 10px 12px;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    color: var(--fg); font-size: 12px;
+    outline: none;
+    min-height: 80px; resize: vertical;
+    font-family: var(--mono);
+  }
+  .color-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+  .color-swatch {
+    width: 32px; height: 32px;
+    border: 2px solid var(--line-2);
+    cursor: pointer;
+    position: relative;
+  }
+  .color-swatch.active { border-color: var(--fg); }
+  .color-swatch.active::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--bg); font-weight: 700; font-size: 18px;
+  }
+
+  .btn {
+    display: inline-block; padding: 10px 16px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    border: 1px solid var(--line-2);
+    color: var(--fg);
+    background: var(--bg-2);
+    transition: all 0.1s;
+  }
+  .btn:hover { background: var(--bg-3); }
+  .btn.primary { background: var(--red); border-color: var(--red); color: var(--bg); }
+  .btn.primary:hover { background: var(--red-deep); border-color: var(--red-deep); }
+  .btn.ghost { background: transparent; }
+  .btn-row { display: flex; gap: 8px; margin-top: 16px; }
+
+  /* QR display */
+  .qr-box {
+    background: var(--fg); padding: 16px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 16px 0 8px;
+  }
+  .qr-box img, .qr-box canvas { width: 100%; max-width: 280px; image-rendering: pixelated; }
+  .qr-payload {
+    font-family: var(--mono); font-size: 10px;
+    word-break: break-all;
+    padding: 8px; background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--fg-mute);
+    max-height: 80px; overflow-y: auto;
+  }
+
+  /* Scan area */
+  .scan-box {
+    background: var(--bg-2);
+    border: 1px solid var(--line-2);
+    aspect-ratio: 1/1;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .scan-box video {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .scan-box .overlay {
+    position: absolute; inset: 12%;
+    border: 2px solid var(--red);
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.4);
+    pointer-events: none;
+  }
+  .scan-status {
+    font-size: 11px; color: var(--fg-mute);
+    text-align: center; padding: 4px 0;
+  }
+
+  /* Friends list */
+  .friend-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .friend-row:first-of-type { border-top: none; }
+  .friend-avatar {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--bg); font-size: 12px;
+    text-transform: uppercase;
+  }
+  .friend-info { flex: 1; min-width: 0; }
+  .friend-info .n { font-weight: 700; font-size: 13px; }
+  .friend-info .m { font-size: 10px; color: var(--fg-mute); text-transform: uppercase; letter-spacing: 0.1em; }
+  .friend-toggle {
+    width: 36px; height: 20px;
+    background: var(--bg-2); border: 1px solid var(--line-2);
+    position: relative; cursor: pointer;
+  }
+  .friend-toggle.on { background: var(--red); border-color: var(--red); }
+  .friend-toggle::after {
+    content: ''; position: absolute; top: 1px; left: 1px;
+    width: 16px; height: 16px;
+    background: var(--fg);
+    transition: transform 0.15s;
+  }
+  .friend-toggle.on::after { transform: translateX(16px); background: var(--bg); }
+
+  /* Meetpoints */
+  .mp-row {
+    display: grid; grid-template-columns: 60px 1fr auto;
+    align-items: center; gap: 10px;
+    padding: 10px 0;
+    border-top: 1px solid var(--line);
+  }
+  .mp-row:first-of-type { border-top: none; }
+  .mp-row .when { font-family: var(--display); font-size: 16px; color: var(--gold); letter-spacing: 0.05em; }
+  .mp-row .what .l { font-weight: 700; font-size: 13px; }
+  .mp-row .what .n { font-size: 11px; color: var(--fg-mute); }
+  .mp-row .x { color: var(--fg-mute); padding: 4px; font-size: 14px; }
+
+  /* Misc */
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--fg-mute); font-size: 12px; }
+  .empty-state .big { font-family: var(--display); font-size: 22px; color: var(--fg-dim); margin-bottom: 8px; letter-spacing: 0.06em; }
+
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-3); border: 1px solid var(--line-2);
+    padding: 10px 16px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    z-index: 200;
+    animation: toast 2.4s ease-out forwards;
+  }
+  @keyframes toast {
+    0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    10%, 80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  }
+
+  @media (max-width: 380px) {
+    .day-tab { padding: 10px 10px 8px; font-size: 15px; }
+    .concert { grid-template-columns: 56px 1fr auto; gap: 8px; }
+    .concert .name { font-size: 15px; }
+  }
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <div class="brand"><span class="x">HELL</span>FEST <span class="y">'26</span></div>
+    <button id="identity-btn" class="identity">
+      <span id="identity-name">MOI</span>
+      <span class="dot" id="identity-dot" style="color: #e63946"></span>
+    </button>
+  </header>
+  <nav class="days" id="days"></nav>
+  <div class="viewbar">
+    <button class="view-tab" data-view="lineup">LINEUP</button>
+    <button class="view-tab" data-view="planning">MON PLANNING</button>
+    <button class="view-tab" data-view="group">GROUPE</button>
+    <div class="stats" id="stats"></div>
+  </div>
+  <main class="content" id="content"></main>
+  <footer class="actionbar">
+    <button id="btn-friends"><span class="icon">◉</span>AMIS</button>
+    <button id="btn-meetpoints"><span class="icon">✕</span>RDV</button>
+    <button id="btn-scan"><span class="icon">⬚</span>SCAN</button>
+    <button id="btn-import"><span class="icon">↓</span>COLLER</button>
+    <button id="btn-qr" class="primary"><span class="icon">▦</span>MON QR</button>
+  </footer>
+</div>
+<div id="modal-root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.js"></script>
+
+<script>
+/* ============ DATA (injected below by build) ============ */
+// Hellfest 2026 - running order data extracted from official PDFs
+// Format: {d:day, st:stage, n:name, s:start "HH:MM", e:end "HH:MM", g:genre?}
+// Stable concert ID = `${d}-${st}-${s.replace(':','')}`
+// Times past midnight belong to the same "festival day" as the start (handled in code)
+
+const DAYS = [
+  { id: 'wed17', label: 'MER 17', full: 'Mercredi 17 juin', date: '2026-06-17' },
+  { id: 'thu18', label: 'JEU 18', full: 'Jeudi 18 juin', date: '2026-06-18' },
+  { id: 'fri19', label: 'VEN 19', full: 'Vendredi 19 juin', date: '2026-06-19' },
+  { id: 'sat20', label: 'SAM 20', full: 'Samedi 20 juin', date: '2026-06-20' },
+  { id: 'sun21', label: 'DIM 21', full: 'Dimanche 21 juin', date: '2026-06-21' },
+];
+
+const STAGES = [
+  // Hellfest main
+  { id: 'ms1', label: 'MAINSTAGE 01', zone: 'main', color: '#1d4ed8' },
+  { id: 'ms2', label: 'MAINSTAGE 02', zone: 'main', color: '#6b7280' },
+  { id: 'wz',  label: 'WARZONE',      zone: 'main', color: '#84cc16' },
+  { id: 'vl',  label: 'VALLEY',       zone: 'main', color: '#ca8a04' },
+  { id: 'tp',  label: 'TEMPLE',       zone: 'main', color: '#9ca3af' },
+  { id: 'al',  label: 'ALTAR',        zone: 'main', color: '#dc2626' },
+  // Hellcity
+  { id: 'hs',  label: 'HELLSTAGE',    zone: 'hellcity', color: '#f97316' },
+  { id: 'mc',  label: 'METAL CORNER', zone: 'hellcity', color: '#f97316' },
+  { id: 'ph',  label: 'PURPLE HOUSE', zone: 'hellcity', color: '#a855f7' },
+  { id: 'hc',  label: 'HELLCITY BREWPUB', zone: 'hellcity', color: '#ea580c' },
+];
+
+const CONCERTS = [
+  // ============ MERCREDI 17 (Hellcity only) ============
+  // HELLSTAGE
+  { d:'wed17', st:'hs', n:'NO TERROR IN THE BANG', s:'16:30', e:'17:10', g:'metal progressif' },
+  { d:'wed17', st:'hs', n:'SPLIT', s:'17:40', e:'18:20', g:'crust / hardcore' },
+  { d:'wed17', st:'hs', n:'VERTEX', s:'18:50', e:'19:30', g:'metal progressif' },
+  { d:'wed17', st:'hs', n:'LOMOR', s:'20:00', e:'20:40', g:'thrash metal' },
+  { d:'wed17', st:'hs', n:'SCHLAASSS', s:'20:40', e:'21:10', g:'volvo core' },
+  { d:'wed17', st:'hs', n:'DOPE SPELL', s:'21:10', e:'21:50', g:'metalcore / deathcore' },
+  { d:'wed17', st:'hs', n:'CELERITAS', s:'21:50', e:'22:20', g:'eurodance' },
+  { d:'wed17', st:'hs', n:'MEDUSA HENDRICKS', s:'22:20', e:'22:35', g:'performance' },
+  { d:'wed17', st:'hs', n:'LOU STRUMMER', s:'22:50', e:'00:10', g:'DJ' },
+  // METAL CORNER
+  { d:'wed17', st:'mc', n:'COUPE DU MONDE Portugal / DR Congo', s:'19:00', e:'21:00', g:'projection' },
+  { d:'wed17', st:'mc', n:'FLYMEON', s:'22:30', e:'00:00', g:'DJ' },
+  // PURPLE HOUSE
+  { d:'wed17', st:'ph', n:'BAD POSITION', s:'16:20', e:'17:00', g:'punk grunge' },
+  { d:'wed17', st:'ph', n:'PUSSY MIEL', s:'17:30', e:'18:10', g:'garage' },
+  { d:'wed17', st:'ph', n:'YÜ', s:'18:40', e:'19:20', g:'garage / psyche' },
+  { d:'wed17', st:'ph', n:'DIRTY RODEO', s:'19:50', e:'20:30', g:'post-hardcore' },
+  { d:'wed17', st:'ph', n:'COLD.CAPSULE', s:'21:00', e:'21:40', g:'post-hardcore' },
+  { d:'wed17', st:'ph', n:'VIOLENCE', s:'22:10', e:'22:50', g:'metal indus / bass music' },
+  { d:'wed17', st:'ph', n:'POLYBIUS', s:'23:05', e:'00:05', g:'synthwave' },
+  // HELLCITY BREWPUB
+  { d:'wed17', st:'hc', n:'FAT JEFF', s:'17:10', e:'17:50', g:'heavy blues' },
+  { d:'wed17', st:'hc', n:'DOM FERRER', s:'18:20', e:'19:00', g:'rock' },
+  { d:'wed17', st:'hc', n:'DÏE MORG', s:'19:30', e:'20:10', g:'rock folk' },
+  { d:'wed17', st:'hc', n:'QLAY', s:'20:40', e:'21:20', g:'rock progressif' },
+  { d:'wed17', st:'hc', n:'WILL BARBER', s:'21:50', e:'22:30', g:'blues rock' },
+
+  // ============ JEUDI 18 ============
+  // MAINSTAGE 01
+  { d:'thu18', st:'ms1', n:'WE CAME AS ROMANS', s:'16:00', e:'16:40' },
+  { d:'thu18', st:'ms1', n:'THE PLOT IN YOU', s:'17:30', e:'18:10' },
+  { d:'thu18', st:'ms1', n:'BREAKING BENJAMIN', s:'19:05', e:'19:55' },
+  { d:'thu18', st:'ms1', n:'PAPA ROACH', s:'21:20', e:'22:25' },
+  { d:'thu18', st:'ms1', n:'BRING ME THE HORIZON', s:'23:35', e:'00:50' },
+  // MAINSTAGE 02
+  { d:'thu18', st:'ms2', n:'MIKKEY DEE WITH FRIENDS', s:'16:45', e:'17:25' },
+  { d:'thu18', st:'ms2', n:'THE PRETTY RECKLESS', s:'18:15', e:'19:00' },
+  { d:'thu18', st:'ms2', n:'DEEP PURPLE', s:'20:00', e:'21:15' },
+  { d:'thu18', st:'ms2', n:'ALICE COOPER', s:'22:30', e:'23:30' },
+  { d:'thu18', st:'ms2', n:'ALESTORM', s:'00:55', e:'01:45' },
+  // WARZONE
+  { d:'thu18', st:'wz', n:'SATANIC SURFERS', s:'16:45', e:'17:25' },
+  { d:'thu18', st:'wz', n:'SHELTER', s:'18:15', e:'19:00' },
+  { d:'thu18', st:'wz', n:'LAGWAGON', s:'20:00', e:'21:00' },
+  { d:'thu18', st:'wz', n:'ALL TIME LOW', s:'22:10', e:'23:10' },
+  { d:'thu18', st:'wz', n:'SOCIAL DISTORTION', s:'00:30', e:'01:30' },
+  // VALLEY
+  { d:'thu18', st:'vl', n:'TRUCKFIGHTERS', s:'16:00', e:'16:40' },
+  { d:'thu18', st:'vl', n:'ELDER', s:'17:30', e:'18:10' },
+  { d:'thu18', st:'vl', n:'THE INSPECTOR CLUZO', s:'19:05', e:'19:55' },
+  { d:'thu18', st:'vl', n:'UNCLE ACID AND THE DEADBEATS', s:'21:05', e:'22:05' },
+  { d:'thu18', st:'vl', n:'KADAVAR', s:'23:15', e:'00:25' },
+  // TEMPLE
+  { d:'thu18', st:'tp', n:'PERCHTA', s:'16:45', e:'17:25' },
+  { d:'thu18', st:'tp', n:'WINTERFYLLETH', s:'18:15', e:'19:00' },
+  { d:'thu18', st:'tp', n:'BORKNAGAR', s:'20:00', e:'21:00' },
+  { d:'thu18', st:'tp', n:'SKÁLD', s:'22:10', e:'23:10' },
+  { d:'thu18', st:'tp', n:'FEUERSCHWANZ', s:'00:30', e:'01:30' },
+  // ALTAR
+  { d:'thu18', st:'al', n:'SKAPHOS', s:'16:00', e:'16:40' },
+  { d:'thu18', st:'al', n:'DEVANGELIC', s:'17:30', e:'18:10' },
+  { d:'thu18', st:'al', n:'RIVERS OF NIHIL', s:'19:05', e:'19:55' },
+  { d:'thu18', st:'al', n:'THE HALO EFFECT', s:'21:05', e:'22:05' },
+  { d:'thu18', st:'al', n:'IGORRR', s:'23:15', e:'00:25' },
+  // HELLSTAGE jeudi
+  { d:'thu18', st:'hs', n:'ASH TWIN PROJECT', s:'12:30', e:'13:10', g:'metal progressif' },
+  { d:'thu18', st:'hs', n:'CORRUPTION PACT', s:'13:40', e:'14:20', g:'hardcore / death metal' },
+  { d:'thu18', st:'hs', n:'ODC', s:'14:50', e:'15:30', g:'metal alternatif' },
+  { d:'thu18', st:'hs', n:'KALKAS', s:'16:00', e:'16:40', g:'stoner psychédélique' },
+  { d:'thu18', st:'hs', n:'AB-NATURAL', s:'17:10', e:'17:50', g:'metalcore' },
+  { d:'thu18', st:'hs', n:'UNDERSTATEMENT', s:'18:20', e:'19:00', g:'pop punk' },
+  { d:'thu18', st:'hs', n:'SCHLAASSS', s:'19:00', e:'19:45', g:'volvo core' },
+  { d:'thu18', st:'hs', n:'CELERITAS', s:'20:15', e:'21:00', g:'eurodance' },
+  // METAL CORNER jeudi
+  { d:'thu18', st:'mc', n:'YOGA METAL', s:'10:00', e:'11:00', g:'sport' },
+  { d:'thu18', st:'mc', n:'YOGA ANTI-DOULEUR', s:'11:15', e:'12:15', g:'sport' },
+  { d:'thu18', st:'mc', n:'COUPE DU MONDE Tchéquie / Afrique du sud', s:'18:00', e:'20:00', g:'projection' },
+  { d:'thu18', st:'mc', n:'ROCKMY HELLFEST (DJ JEB BEN)', s:'00:15', e:'03:50', g:'DJ' },
+  // PURPLE HOUSE jeudi
+  { d:'thu18', st:'ph', n:'KRISTEL', s:'12:50', e:'13:30', g:'rock fusion' },
+  { d:'thu18', st:'ph', n:'KIWI VANDALE', s:'14:00', e:'14:40', g:'punk rock' },
+  { d:'thu18', st:'ph', n:'HEALER', s:'15:10', e:'15:50', g:'sludge' },
+  { d:'thu18', st:'ph', n:'FEINTS', s:'16:20', e:'17:00', g:'hardcore' },
+  { d:'thu18', st:'ph', n:'LES HOMMES CRABES', s:'17:30', e:'18:10', g:'post-grunge' },
+  { d:'thu18', st:'ph', n:'MEDUSA HENDRICKS', s:'18:25', e:'18:40', g:'performance' },
+  // HELLCITY BREWPUB jeudi
+  { d:'thu18', st:'hc', n:'BINGO METAL (JIMMY CLISSON)', s:'12:30', e:'14:00', g:'animation' },
+  { d:'thu18', st:'hc', n:'WILL BARBER', s:'15:30', e:'16:10', g:'blues rock' },
+  { d:'thu18', st:'hc', n:'SAMIR AOUAD', s:'16:40', e:'17:20', g:'oriental metal covers' },
+  { d:'thu18', st:'hc', n:'GRANT HAUA', s:'17:50', e:'18:30', g:'blues' },
+  { d:'thu18', st:'hc', n:'FAT JEFF', s:'19:00', e:'19:40', g:'heavy blues' },
+
+  // ============ VENDREDI 19 ============
+  // MAINSTAGE 01
+  { d:'fri19', st:'ms1', n:'BLACKRAIN', s:'11:05', e:'11:35' },
+  { d:'fri19', st:'ms1', n:'WINGS OF STEEL', s:'12:15', e:'12:45' },
+  { d:'fri19', st:'ms1', n:'SORTILÈGE', s:'13:35', e:'14:15' },
+  { d:'fri19', st:'ms1', n:'QUEENSRŸCHE', s:'15:05', e:'15:50' },
+  { d:'fri19', st:'ms1', n:'ACCEPT', s:'16:45', e:'17:35' },
+  { d:'fri19', st:'ms1', n:'HELLOWEEN', s:'18:35', e:'19:55' },
+  { d:'fri19', st:'ms1', n:'IRON MAIDEN', s:'21:00', e:'23:10' },
+  { d:'fri19', st:'ms1', n:'ULTRA VOMIT', s:'00:50', e:'02:00' },
+  // MAINSTAGE 02
+  { d:'fri19', st:'ms2', n:'URAVENA', s:'10:30', e:'11:00' },
+  { d:'fri19', st:'ms2', n:'RETURN TO DUST', s:'11:40', e:'12:10' },
+  { d:'fri19', st:'ms2', n:'BROTHERS OF METAL', s:'12:50', e:'13:30' },
+  { d:'fri19', st:'ms2', n:'TESSERACT', s:'14:20', e:'15:00' },
+  { d:'fri19', st:'ms2', n:'BLOODYWOOD', s:'15:55', e:'16:40' },
+  { d:'fri19', st:'ms2', n:'SEPULTURA', s:'17:40', e:'18:30' },
+  { d:'fri19', st:'ms2', n:'OPETH', s:'20:00', e:'20:55' },
+  { d:'fri19', st:'ms2', n:'SABATON', s:'23:15', e:'00:45' },
+  // WARZONE
+  { d:'fri19', st:'wz', n:'WAKE THE DEAD', s:'11:05', e:'11:35' },
+  { d:'fri19', st:'wz', n:'GRIDIRON', s:'12:15', e:'12:45' },
+  { d:'fri19', st:'wz', n:'DIE SPITZ', s:'13:35', e:'14:15' },
+  { d:'fri19', st:'wz', n:'POINT MORT', s:'15:05', e:'15:50' },
+  { d:'fri19', st:'wz', n:'DYING WISH', s:'16:45', e:'17:35' },
+  { d:'fri19', st:'wz', n:'CEREMONY', s:'18:35', e:'19:25' },
+  { d:'fri19', st:'wz', n:'MALEVOLENCE', s:'20:35', e:'21:35' },
+  { d:'fri19', st:'wz', n:'LA DISPUTE', s:'22:45', e:'23:45' },
+  { d:'fri19', st:'wz', n:'THE DILLINGER ESCAPE PLAN', s:'00:55', e:'02:00' },
+  // VALLEY
+  { d:'fri19', st:'vl', n:'DRAGUNOV', s:'10:30', e:'11:00' },
+  { d:'fri19', st:'vl', n:'YAROSTAN', s:'11:40', e:'12:10' },
+  { d:'fri19', st:'vl', n:'REZN', s:'12:50', e:'13:30' },
+  { d:'fri19', st:'vl', n:'CONJURER', s:'14:20', e:'15:00' },
+  { d:'fri19', st:'vl', n:'STONED JESUS', s:'15:55', e:'16:40' },
+  { d:'fri19', st:'vl', n:'TORCHE', s:'17:40', e:'18:30' },
+  { d:'fri19', st:'vl', n:'LOATHE', s:'19:30', e:'20:30' },
+  { d:'fri19', st:'vl', n:'SLIFT', s:'21:40', e:'22:40' },
+  { d:'fri19', st:'vl', n:'MASTODON', s:'23:50', e:'00:50' },
+  // TEMPLE
+  { d:'fri19', st:'tp', n:'MOURIR', s:'11:05', e:'11:35' },
+  { d:'fri19', st:'tp', n:'KILLUS', s:'12:15', e:'12:45' },
+  { d:'fri19', st:'tp', n:'PONTE DEL DIAVOLO', s:'13:35', e:'14:15' },
+  { d:'fri19', st:'tp', n:'EINHERJER', s:'15:05', e:'15:50' },
+  { d:'fri19', st:'tp', n:'TRELLDOM', s:'16:45', e:'17:35' },
+  { d:'fri19', st:'tp', n:'CARACH ANGREN', s:'18:35', e:'19:25' },
+  { d:'fri19', st:'tp', n:'ROTTING CHRIST', s:'20:35', e:'21:35' },
+  { d:'fri19', st:'tp', n:'MY DYING BRIDE', s:'22:45', e:'23:45' },
+  { d:'fri19', st:'tp', n:'THE GATHERING', s:'00:55', e:'02:00' },
+  // ALTAR
+  { d:'fri19', st:'al', n:'IMPUREZA', s:'10:30', e:'11:00' },
+  { d:'fri19', st:'al', n:'ESODIC', s:'11:40', e:'12:10' },
+  { d:'fri19', st:'al', n:'CRYPTA', s:'12:50', e:'13:30' },
+  { d:'fri19', st:'al', n:'BLOOD RED THRONE', s:'14:20', e:'15:00' },
+  { d:'fri19', st:'al', n:'SINSAENUM', s:'15:55', e:'16:40' },
+  { d:'fri19', st:'al', n:'SYLOSIS', s:'17:40', e:'18:30' },
+  { d:'fri19', st:'al', n:'DECAPITATED', s:'19:30', e:'20:30' },
+  { d:'fri19', st:'al', n:'PERIPHERY', s:'21:40', e:'22:40' },
+  { d:'fri19', st:'al', n:'BLOOD INCANTATION', s:'23:50', e:'00:50' },
+  // HELLSTAGE vendredi
+  { d:'fri19', st:'hs', n:'SCHLAASSS', s:'12:40', e:'13:10', g:'volvo core' },
+  { d:'fri19', st:'hs', n:'CELERITAS', s:'13:40', e:'14:10', g:'eurodance' },
+  { d:'fri19', st:'hs', n:'MY TURN', s:'14:40', e:'15:20', g:'hardcore' },
+  { d:'fri19', st:'hs', n:'FELO SKURT (SKB)', s:'15:50', e:'16:30', g:'trap metal' },
+  { d:'fri19', st:'hs', n:'DEADLY DUST', s:'17:00', e:'17:40', g:'heavy rock' },
+  { d:'fri19', st:'hs', n:'HÜMANIMAL', s:'18:10', e:'18:50', g:'metalcore' },
+  // METAL CORNER vendredi
+  { d:'fri19', st:'mc', n:'YOGA METAL', s:'10:00', e:'11:00', g:'sport' },
+  { d:'fri19', st:'mc', n:'YOGA ANTI-DOULEUR', s:'11:15', e:'12:15', g:'sport' },
+  { d:'fri19', st:'mc', n:'QUE TON RÈGNE VIENNE', s:'14:00', e:'16:00', g:'projection' },
+  { d:'fri19', st:'mc', n:'COUPE DU MONDE USA / Australie', s:'21:00', e:'23:00', g:'projection' },
+  { d:'fri19', st:'mc', n:'NAME THAT BITCH', s:'00:15', e:'03:50', g:'DJ' },
+  // PURPLE HOUSE vendredi
+  { d:'fri19', st:'ph', n:'COLD STRESS', s:'12:50', e:'13:30', g:'punk hardcore' },
+  { d:'fri19', st:'ph', n:'VILEBREQUIN', s:'14:00', e:'14:40', g:"rock'n roll" },
+  { d:'fri19', st:'ph', n:'VAIN VALKYRIES', s:'15:10', e:'15:50', g:'mathcore' },
+  { d:'fri19', st:'ph', n:'CARBONIC FIELDS', s:'16:20', e:'17:00', g:'death metal' },
+  { d:'fri19', st:'ph', n:'NOT YOUR MOTHER', s:'17:30', e:'18:10', g:'punk rock' },
+  { d:'fri19', st:'ph', n:'MEDUSA HENDRICKS', s:'18:25', e:'18:40', g:'performance' },
+  // HELLCITY BREWPUB vendredi
+  { d:'fri19', st:'hc', n:'BINGO METAL (JIMMY CLISSON)', s:'12:30', e:'14:00', g:'animation' },
+  { d:'fri19', st:'hc', n:'PIT SAMPRASS', s:'15:30', e:'16:10', g:'folk punk' },
+  { d:'fri19', st:'hc', n:'LE BARDA', s:'16:40', e:'17:20', g:'folk & blues' },
+  { d:'fri19', st:'hc', n:'QLAY', s:'17:50', e:'18:30', g:'rock progressif' },
+  { d:'fri19', st:'hc', n:'VIBRANT VARNISH', s:'19:00', e:'19:40', g:'rock' },
+
+  // ============ SAMEDI 20 ============
+  // MAINSTAGE 01
+  { d:'sat20', st:'ms1', n:'SLAY SQUAD', s:'11:05', e:'11:35' },
+  { d:'sat20', st:'ms1', n:'THORNHILL', s:'12:25', e:'13:05' },
+  { d:'sat20', st:'ms1', n:'HOUSE OF PROTECTION', s:'13:55', e:'14:35' },
+  { d:'sat20', st:'ms1', n:'ENHANCER', s:'15:25', e:'16:05' },
+  { d:'sat20', st:'ms1', n:'STATIC-X', s:'16:55', e:'17:40' },
+  { d:'sat20', st:'ms1', n:'TOM MORELLO', s:'18:35', e:'19:25' },
+  { d:'sat20', st:'ms1', n:'A PERFECT CIRCLE', s:'20:35', e:'21:45' },
+  { d:'sat20', st:'ms1', n:'LIMP BIZKIT', s:'23:10', e:'00:40' },
+  // MAINSTAGE 02
+  { d:'sat20', st:'ms2', n:'LOCOMUERTE', s:'10:30', e:'11:00' },
+  { d:'sat20', st:'ms2', n:'INSANITY ALERT', s:'11:40', e:'12:20' },
+  { d:'sat20', st:'ms2', n:'ESCUELA GRIND', s:'13:10', e:'13:50' },
+  { d:'sat20', st:'ms2', n:'GATECREEPER', s:'14:40', e:'15:20' },
+  { d:'sat20', st:'ms2', n:'CRISIX', s:'16:10', e:'16:50' },
+  { d:'sat20', st:'ms2', n:'CAVALERA "CHAOS A.D."', s:'17:45', e:'18:30' },
+  { d:'sat20', st:'ms2', n:'ANTHRAX', s:'19:30', e:'20:30' },
+  { d:'sat20', st:'ms2', n:'MEGADETH', s:'21:50', e:'23:05' },
+  { d:'sat20', st:'ms2', n:'VOLBEAT', s:'00:45', e:'02:00' },
+  // WARZONE
+  { d:'sat20', st:'wz', n:'FALSE REALITY', s:'11:05', e:'11:35' },
+  { d:'sat20', st:'wz', n:'COMBUST', s:'12:25', e:'13:05' },
+  { d:'sat20', st:'wz', n:'KING 810', s:'13:55', e:'14:35' },
+  { d:'sat20', st:'wz', n:'CANCER BATS', s:'15:25', e:'16:05' },
+  { d:'sat20', st:'wz', n:'TRASH TALK', s:'16:55', e:'17:40' },
+  { d:'sat20', st:'wz', n:'CRO-MAGS', s:'18:35', e:'19:25' },
+  { d:'sat20', st:'wz', n:'KUBLAI KHAN TX', s:'20:35', e:'21:35' },
+  { d:'sat20', st:'wz', n:'LIONHEART', s:'22:45', e:'23:45' },
+  { d:'sat20', st:'wz', n:'HATEBREED', s:'00:55', e:'02:00' },
+  // VALLEY
+  { d:'sat20', st:'vl', n:'COLD.CAPSULE', s:'10:30', e:'11:00' },
+  { d:'sat20', st:'vl', n:'BRUIT ≤', s:'11:40', e:'12:20' },
+  { d:'sat20', st:'vl', n:'FANGE', s:'13:10', e:'13:50' },
+  { d:'sat20', st:'vl', n:'PSYCHONAUT', s:'14:40', e:'15:20' },
+  { d:'sat20', st:'vl', n:'PIGS PIGS PIGS PIGS PIGS PIGS PIGS', s:'16:10', e:'16:50' },
+  { d:'sat20', st:'vl', n:'GOD IS AN ASTRONAUT', s:'17:45', e:'18:30' },
+  { d:'sat20', st:'vl', n:'THE YOUNG GODS', s:'19:30', e:'20:30' },
+  { d:'sat20', st:'vl', n:'AMENRA', s:'21:40', e:'22:40' },
+  { d:'sat20', st:'vl', n:'CULT OF LUNA', s:'23:50', e:'00:50' },
+  // TEMPLE
+  { d:'sat20', st:'tp', n:'VIGLJÓS', s:'11:05', e:'11:35' },
+  { d:'sat20', st:'tp', n:'HULDER', s:'12:25', e:'13:05' },
+  { d:'sat20', st:'tp', n:'NON EST DEUS', s:'13:55', e:'14:35' },
+  { d:'sat20', st:'tp', n:'1914', s:'15:25', e:'16:05' },
+  { d:'sat20', st:'tp', n:'GAEREA', s:'16:55', e:'17:40' },
+  { d:'sat20', st:'tp', n:'ORANSSI PAZUZU', s:'18:35', e:'19:25' },
+  { d:'sat20', st:'tp', n:'AURA NOIR', s:'20:35', e:'21:35' },
+  { d:'sat20', st:'tp', n:"OLD MAN'S CHILD", s:'22:45', e:'23:45' },
+  { d:'sat20', st:'tp', n:'BEHEMOTH', s:'00:55', e:'02:00' },
+  // ALTAR
+  { d:'sat20', st:'al', n:'DVRK', s:'10:30', e:'11:00' },
+  { d:'sat20', st:'al', n:'PROFANATION', s:'11:40', e:'12:20' },
+  { d:'sat20', st:'al', n:'CABAL', s:'13:10', e:'13:50' },
+  { d:'sat20', st:'al', n:'DEFEATED SANITY', s:'14:40', e:'15:20' },
+  { d:'sat20', st:'al', n:'SEVERE TORTURE', s:'16:10', e:'16:50' },
+  { d:'sat20', st:'al', n:'OBSCURA', s:'17:45', e:'18:30' },
+  { d:'sat20', st:'al', n:'SEPTICFLESH', s:'19:30', e:'20:30' },
+  { d:'sat20', st:'al', n:'CARCASS', s:'21:40', e:'22:40' },
+  { d:'sat20', st:'al', n:'DEICIDE', s:'23:50', e:'00:50' },
+  // HELLSTAGE samedi
+  { d:'sat20', st:'hs', n:'SCHLAASSS', s:'12:40', e:'13:10', g:'volvo core' },
+  { d:'sat20', st:'hs', n:'CELERITAS', s:'13:40', e:'14:10', g:'eurodance' },
+  { d:'sat20', st:'hs', n:'HEADKEYZ', s:'14:40', e:'15:20', g:'rock alternatif' },
+  { d:'sat20', st:'hs', n:'FRACTAL GATES', s:'15:50', e:'16:30', g:'death metal' },
+  { d:'sat20', st:'hs', n:'FALLEN AT DAWN', s:'17:00', e:'17:40', g:'deathcore' },
+  { d:'sat20', st:'hs', n:'KUAZAR', s:'18:10', e:'18:50', g:'thrash metal' },
+  // METAL CORNER samedi
+  { d:'sat20', st:'mc', n:'YOGA METAL', s:'10:00', e:'11:00', g:'sport' },
+  { d:'sat20', st:'mc', n:'YOGA ANTI-DOULEUR', s:'11:15', e:'12:15', g:'sport' },
+  { d:'sat20', st:'mc', n:'POUM TCHAK ACADÉMIE', s:'14:30', e:'15:15', g:'masterclass' },
+  { d:'sat20', st:'mc', n:'COUPE DU MONDE Pays-Bas / Suède', s:'19:00', e:'21:00', g:'projection' },
+  { d:'sat20', st:'mc', n:'MICHEL MERCURY', s:'00:15', e:'03:50', g:'DJ' },
+  // PURPLE HOUSE samedi
+  { d:'sat20', st:'ph', n:'EX HEN', s:'12:50', e:'13:30', g:'rock' },
+  { d:'sat20', st:'ph', n:'EMBRACE YOUR PUNISHMENT', s:'14:00', e:'14:40', g:'brutal death metal' },
+  { d:'sat20', st:'ph', n:'MINNS DU', s:'15:10', e:'15:50', g:'post-hardcore' },
+  { d:'sat20', st:'ph', n:'LES BÂTARDS DU ROI', s:'16:20', e:'17:00', g:'black metal' },
+  { d:'sat20', st:'ph', n:'KO-MA', s:'17:30', e:'18:10', g:'post-hardcore' },
+  { d:'sat20', st:'ph', n:'MEDUSA HENDRICKS', s:'18:25', e:'18:40', g:'performance' },
+  // HELLCITY BREWPUB samedi
+  { d:'sat20', st:'hc', n:'BINGO METAL (JIMMY CLISSON)', s:'12:30', e:'14:00', g:'animation' },
+  { d:'sat20', st:'hc', n:'JUMPING JACK', s:'15:30', e:'16:10', g:'rock' },
+  { d:'sat20', st:'hc', n:'HAMASAARI', s:'16:40', e:'17:20', g:'rock progressif' },
+  { d:'sat20', st:'hc', n:"BOB'S NOT DEAD", s:'17:50', e:'18:30', g:'punk' },
+  { d:'sat20', st:'hc', n:'LE BARDA', s:'19:00', e:'19:40', g:'folk & blues' },
+
+  // ============ DIMANCHE 21 ============
+  // MAINSTAGE 01
+  { d:'sun21', st:'ms1', n:'NOT SCIENTISTS', s:'11:05', e:'11:35' },
+  { d:'sun21', st:'ms1', n:'THE DWARVES', s:'12:15', e:'12:45' },
+  { d:'sun21', st:'ms1', n:'THE BONES', s:'13:35', e:'14:15' },
+  { d:'sun21', st:'ms1', n:'THE ATARIS', s:'15:10', e:'15:55' },
+  { d:'sun21', st:'ms1', n:'PENNYWISE', s:'16:50', e:'17:40' },
+  { d:'sun21', st:'ms1', n:'RISE AGAINST', s:'18:40', e:'19:40' },
+  { d:'sun21', st:'ms1', n:'THE HIVES', s:'20:50', e:'21:50' },
+  { d:'sun21', st:'ms1', n:'THE OFFSPRING', s:'23:15', e:'00:30' },
+  // MAINSTAGE 02
+  { d:'sun21', st:'ms2', n:'THE FUNERAL PORTRAIT', s:'10:30', e:'11:00' },
+  { d:'sun21', st:'ms2', n:'REVNOIR', s:'11:40', e:'12:10' },
+  { d:'sun21', st:'ms2', n:'RESOLVE', s:'12:50', e:'13:30' },
+  { d:'sun21', st:'ms2', n:'PRESIDENT', s:'14:20', e:'15:05' },
+  { d:'sun21', st:'ms2', n:'BLACK VEIL BRIDES', s:'16:00', e:'16:45' },
+  { d:'sun21', st:'ms2', n:'THREE DAYS GRACE', s:'17:45', e:'18:35' },
+  { d:'sun21', st:'ms2', n:'ARCHITECTS', s:'19:45', e:'20:45' },
+  { d:'sun21', st:'ms2', n:'BAD OMENS', s:'21:55', e:'23:10' },
+  // WARZONE
+  { d:'sun21', st:'wz', n:'KAREN DIÓ', s:'10:30', e:'11:00' },
+  { d:'sun21', st:'wz', n:'MAID OF ACE', s:'11:40', e:'12:10' },
+  { d:'sun21', st:'wz', n:'END IT', s:'12:50', e:'13:30' },
+  { d:'sun21', st:'wz', n:'DRAIN', s:'14:20', e:'15:05' },
+  { d:'sun21', st:'wz', n:'BUZZCOCKS', s:'16:00', e:'16:45' },
+  { d:'sun21', st:'wz', n:'CIRCLE JERKS', s:'17:45', e:'18:35' },
+  { d:'sun21', st:'wz', n:'AGNOSTIC FRONT', s:'19:45', e:'20:45' },
+  { d:'sun21', st:'wz', n:'THE ADICTS', s:'21:55', e:'23:10' },
+  // VALLEY
+  { d:'sun21', st:'vl', n:'ALTA ROSSA', s:'11:05', e:'11:35' },
+  { d:'sun21', st:'vl', n:'GNOME', s:'12:15', e:'12:45' },
+  { d:'sun21', st:'vl', n:'BLACK TUSK', s:'13:35', e:'14:15' },
+  { d:'sun21', st:'vl', n:'SOILENT GREEN', s:'15:10', e:'15:55' },
+  { d:'sun21', st:'vl', n:'EYEHATEGOD', s:'16:50', e:'17:40' },
+  { d:'sun21', st:'vl', n:'CORROSION OF CONFORMITY', s:'18:40', e:'19:40' },
+  { d:'sun21', st:'vl', n:'ACID BATH', s:'20:50', e:'21:50' },
+  { d:'sun21', st:'vl', n:'DOWN', s:'23:15', e:'00:30' },
+  // TEMPLE
+  { d:'sun21', st:'tp', n:'SILHOUETTE', s:'11:05', e:'11:35' },
+  { d:'sun21', st:'tp', n:'MIDNIGHT ODYSSEY', s:'12:15', e:'12:45' },
+  { d:'sun21', st:'tp', n:'THY LIGHT', s:'13:35', e:'14:15' },
+  { d:'sun21', st:'tp', n:'SCOUR', s:'15:10', e:'15:55' },
+  { d:'sun21', st:'tp', n:'GEHENNA', s:'16:50', e:'17:40' },
+  { d:'sun21', st:'tp', n:'WOLVES IN THE THRONE ROOM', s:'18:40', e:'19:40' },
+  { d:'sun21', st:'tp', n:'MARDUK', s:'20:50', e:'21:50' },
+  { d:'sun21', st:'tp', n:'MAYHEM', s:'23:15', e:'00:30' },
+  // ALTAR
+  { d:'sun21', st:'al', n:'TEMPT FATE', s:'10:30', e:'11:00' },
+  { d:'sun21', st:'al', n:'BLOODSTAIN', s:'11:40', e:'12:10' },
+  { d:'sun21', st:'al', n:'SUBLIME CADAVERIC DECOMPOSITION', s:'12:50', e:'13:30' },
+  { d:'sun21', st:'al', n:'FULCI', s:'14:20', e:'15:05' },
+  { d:'sun21', st:'al', n:'SUICIDAL ANGELS', s:'16:00', e:'16:45' },
+  { d:'sun21', st:'al', n:'SIX FEET UNDER', s:'17:45', e:'18:35' },
+  { d:'sun21', st:'al', n:'POSSESSED', s:'19:45', e:'20:45' },
+  { d:'sun21', st:'al', n:'NAPALM DEATH', s:'21:55', e:'23:10' },
+  // HELLSTAGE dimanche
+  { d:'sun21', st:'hs', n:'SCHLAASSS', s:'12:40', e:'13:10', g:'volvo core' },
+  { d:'sun21', st:'hs', n:'CELERITAS', s:'13:40', e:'14:10', g:'eurodance' },
+  { d:'sun21', st:'hs', n:'FANTAZMAZ', s:'14:40', e:'15:20', g:'punk rock' },
+  { d:'sun21', st:'hs', n:'HOWLING SILENCE', s:'15:50', e:'16:30', g:'metalcore' },
+  { d:'sun21', st:'hs', n:'EMBRYONIC AUTOPSY', s:'17:00', e:'17:40', g:'death metal' },
+  // METAL CORNER dimanche
+  { d:'sun21', st:'mc', n:'YOGA METAL', s:'10:00', e:'11:00', g:'sport' },
+  { d:'sun21', st:'mc', n:'YOGA ANTI-DOULEUR', s:'11:15', e:'12:15', g:'sport' },
+  { d:'sun21', st:'mc', n:'POUM TCHAK ACADÉMIE', s:'14:30', e:'15:15', g:'masterclass' },
+  { d:'sun21', st:'mc', n:'COUPE DU MONDE Espagne / Arabie saoudite', s:'18:00', e:'20:00', g:'projection' },
+  // PURPLE HOUSE dimanche
+  { d:'sun21', st:'ph', n:'BLVL', s:'12:50', e:'13:30', g:'new wave' },
+  { d:'sun21', st:'ph', n:'THE TENSIONS', s:'14:00', e:'14:40', g:'punk rock' },
+  { d:'sun21', st:'ph', n:'CROOKED MINDS', s:'15:10', e:'15:50', g:'post-grunge' },
+  { d:'sun21', st:'ph', n:'PARLOR', s:'16:20', e:'17:00', g:'post-hardcore' },
+  { d:'sun21', st:'ph', n:"AIN'T NO F**KING ARTIST", s:'17:30', e:'18:10', g:'rock alternatif' },
+  // HELLCITY BREWPUB dimanche
+  { d:'sun21', st:'hc', n:'BINGO METAL (JIMMY CLISSON)', s:'12:30', e:'14:00', g:'animation' },
+  { d:'sun21', st:'hc', n:'RING OF CASH', s:'15:20', e:'16:00', g:'power folk rock' },
+  { d:'sun21', st:'hc', n:'FRANZ GUETT', s:'16:30', e:'17:10', g:'rock fusion' },
+  { d:'sun21', st:'hc', n:'VIBRANT VARNISH', s:'17:40', e:'18:20', g:'rock' },
+];
+
+// Assign stable IDs
+CONCERTS.forEach(c => { c.id = `${c.d}-${c.st}-${c.s.replace(':','')}`; });
+
+/* ============ END DATA ============ */
+
+// ---------- Helpers ----------
+const $ = (sel, root=document) => root.querySelector(sel);
+const $$ = (sel, root=document) => [...root.querySelectorAll(sel)];
+const el = (tag, attrs={}, ...children) => {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === 'class') e.className = attrs[k];
+    else if (k === 'style' && typeof attrs[k] === 'object') Object.assign(e.style, attrs[k]);
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+    else if (k === 'html') e.innerHTML = attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const c of children) {
+    if (c == null || c === false) continue;
+    e.appendChild(typeof c === 'string' || typeof c === 'number' ? document.createTextNode(c) : c);
+  }
+  return e;
+};
+
+// Convert "HH:MM" to absolute minutes for the festival day (00:00-09:59 = next day)
+function toMin(t) {
+  const [h, m] = t.split(':').map(Number);
+  const minutes = h * 60 + m;
+  // before 06:00 = next morning (after midnight)
+  return h < 6 ? minutes + 24*60 : minutes;
+}
+function fmtRange(s, e) { return `${s}\n${e}`; }
+
+// Stage / day lookups
+const dayById = Object.fromEntries(DAYS.map(d => [d.id, d]));
+const stageById = Object.fromEntries(STAGES.map(s => [s.id, s]));
+const concertById = Object.fromEntries(CONCERTS.map(c => [c.id, c]));
+
+// ---------- State ----------
+const COLORS = ['#e63946','#f5b400','#84cc16','#06b6d4','#a855f7','#ec4899','#f97316','#22c55e','#3b82f6','#eab308'];
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 12 10 17 19 8"/></svg>';
+
+let state = {
+  user: load('hf_user', { name: 'MOI', color: '#e63946' }),
+  selected: new Set(load('hf_selected', [])),
+  friends: load('hf_friends', []), // [{id, name, color, ids: [], visible: true}]
+  meetpoints: load('hf_meetpoints', []), // [{id, day, time, label, note}]
+  view: 'lineup',
+  day: pickDefaultDay(),
+};
+
+function pickDefaultDay() {
+  const today = new Date();
+  const yr = today.getFullYear(); const mo = today.getMonth()+1; const dd = today.getDate();
+  const todayStr = `${yr}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+  const match = DAYS.find(d => d.date === todayStr);
+  if (match) return match.id;
+  if (todayStr < '2026-06-17') return 'thu18';
+  return 'sun21';
+}
+
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
+}
+function save() {
+  localStorage.setItem('hf_user', JSON.stringify(state.user));
+  localStorage.setItem('hf_selected', JSON.stringify([...state.selected]));
+  localStorage.setItem('hf_friends', JSON.stringify(state.friends));
+  localStorage.setItem('hf_meetpoints', JSON.stringify(state.meetpoints));
+}
+function toast(msg) {
+  const t = el('div', { class: 'toast' }, msg);
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ---------- Conflict detection ----------
+function conflictsFor(selectedIds) {
+  // Returns Set of concert IDs that overlap with another selected concert (same day)
+  const conflicts = new Set();
+  const byDay = {};
+  for (const id of selectedIds) {
+    const c = concertById[id];
+    if (!c) continue;
+    (byDay[c.d] = byDay[c.d] || []).push(c);
+  }
+  for (const day in byDay) {
+    const list = byDay[day];
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i+1; j < list.length; j++) {
+        const a = list[i], b = list[j];
+        const as = toMin(a.s), ae = toMin(a.e);
+        const bs = toMin(b.s), be = toMin(b.e);
+        if (as < be && bs < ae) {
+          conflicts.add(a.id);
+          conflicts.add(b.id);
+        }
+      }
+    }
+  }
+  return conflicts;
+}
+
+// ---------- Rendering ----------
+function renderDays() {
+  const root = $('#days');
+  root.innerHTML = '';
+  for (const d of DAYS) {
+    const count = [...state.selected].filter(id => concertById[id]?.d === d.id).length;
+    const tab = el('button', {
+      class: 'day-tab' + (d.id === state.day ? ' active' : ''),
+      onClick: () => { state.day = d.id; render(); }
+    }, d.label);
+    if (count > 0) tab.appendChild(el('span', { class: 'badge' }, String(count)));
+    root.appendChild(tab);
+  }
+}
+
+function renderStats() {
+  const total = state.selected.size;
+  const conflicts = conflictsFor(state.selected).size / 2; // pairs
+  $('#stats').innerHTML = '';
+  $('#stats').appendChild(el('span', {}, ''));
+  const s1 = el('span', {}, ` ${total} `);
+  const s2 = el('span', { class: 'count' }, String(total));
+  $('#stats').appendChild(s2);
+  $('#stats').appendChild(document.createTextNode(' concerts'));
+  if (conflicts > 0) {
+    $('#stats').appendChild(document.createTextNode(' · '));
+    const c = el('span', { style: { color: 'var(--warn)' } }, `${Math.round(conflicts)} conflit${conflicts>1?'s':''}`);
+    $('#stats').appendChild(c);
+  }
+}
+
+function renderViewTabs() {
+  $$('.view-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === state.view);
+    b.onclick = () => { state.view = b.dataset.view; render(); };
+  });
+}
+
+function renderIdentity() {
+  $('#identity-name').textContent = state.user.name;
+  $('#identity-dot').style.color = state.user.color;
+}
+
+function concertCard(c, opts={}) {
+  const conflicts = opts.conflicts || new Set();
+  const selected = state.selected.has(c.id);
+  const friendsHere = state.friends.filter(f => f.visible !== false && f.ids?.includes(c.id));
+  const card = el('div', {
+    class: 'concert' + (selected ? ' selected' : '') + (selected && conflicts.has(c.id) ? ' conflict' : ''),
+    onClick: () => {
+      if (selected) state.selected.delete(c.id); else state.selected.add(c.id);
+      save(); render();
+    }
+  });
+  card.appendChild(el('div', { class: 'time' },
+    el('div', { class: 'start' }, c.s),
+    el('div', {}, c.e)
+  ));
+  const middle = el('div', {});
+  middle.appendChild(el('div', { class: 'name' }, c.n));
+  const meta = [];
+  if (c.g) meta.push(c.g);
+  if (friendsHere.length) {
+    meta.push(`${friendsHere.length} ami${friendsHere.length>1?'s':''}`);
+  }
+  if (meta.length) middle.appendChild(el('div', { class: 'genre' }, meta.join(' · ')));
+  card.appendChild(middle);
+
+  const right = el('div', { class: 'marks' });
+  for (const f of friendsHere) {
+    right.appendChild(el('span', { class: 'mark', style: { background: f.color }, title: f.name }));
+  }
+  const check = el('div', { class: 'check', html: ICON_CHECK });
+  right.appendChild(check);
+  card.appendChild(right);
+  return card;
+}
+
+function renderLineup() {
+  const root = $('#content');
+  root.innerHTML = '';
+  const day = state.day;
+  const stagesInDay = STAGES.filter(s => CONCERTS.some(c => c.d === day && c.st === s.id));
+  const conflicts = conflictsFor(state.selected);
+  for (const stage of stagesInDay) {
+    const group = el('div', { class: 'stage-group' });
+    const header = el('div', { class: 'stage-header' });
+    header.appendChild(el('span', { class: 'stripe', style: { background: stage.color } }));
+    header.appendChild(el('span', { class: 'name' }, stage.label));
+    header.appendChild(el('span', { class: 'zone' }, stage.zone === 'main' ? 'HELLFEST' : 'HELLCITY'));
+    group.appendChild(header);
+    const concerts = CONCERTS.filter(c => c.d === day && c.st === stage.id)
+      .sort((a,b) => toMin(a.s) - toMin(b.s));
+    for (const c of concerts) {
+      group.appendChild(concertCard(c, { conflicts }));
+    }
+    root.appendChild(group);
+  }
+}
+
+function renderPlanning() {
+  const root = $('#content');
+  root.innerHTML = '';
+  const day = state.day;
+  const conflicts = conflictsFor(state.selected);
+  const mine = CONCERTS.filter(c => c.d === day && state.selected.has(c.id))
+    .sort((a,b) => toMin(a.s) - toMin(b.s));
+  if (mine.length === 0) {
+    root.appendChild(el('div', { class: 'planning-empty' },
+      el('div', { class: 'big' }, 'RIEN.'),
+      el('div', {}, 'Tape "LINEUP" et choisis tes concerts.')
+    ));
+    return;
+  }
+  const group = el('div', { class: 'stage-group' });
+  for (const c of mine) {
+    const card = concertCard(c, { conflicts });
+    // override left stripe with stage color hint
+    const stage = stageById[c.st];
+    const badge = el('div', { class: 'genre' }, stage.label);
+    // inject stage label into card
+    const middle = card.children[1];
+    if (!card.querySelector('.genre')) middle.appendChild(badge);
+    group.appendChild(card);
+  }
+  root.appendChild(group);
+}
+
+function renderGroup() {
+  const root = $('#content');
+  root.innerHTML = '';
+  const day = state.day;
+  // Build a "people" list: me + visible friends
+  const people = [
+    { name: state.user.name, color: state.user.color, ids: [...state.selected] },
+    ...state.friends.filter(f => f.visible !== false)
+  ];
+
+  // For each visible person, list concerts they go to on this day
+  // Group by time slot (start time bucket)
+  const slots = {}; // key: start min, value: { time, items: [{ concert, person }] }
+  for (const p of people) {
+    for (const id of (p.ids || [])) {
+      const c = concertById[id];
+      if (!c || c.d !== day) continue;
+      const key = toMin(c.s);
+      if (!slots[key]) slots[key] = { time: c.s, items: [] };
+      slots[key].items.push({ concert: c, person: p });
+    }
+  }
+  const sortedKeys = Object.keys(slots).map(Number).sort((a,b) => a-b);
+  if (sortedKeys.length === 0) {
+    root.appendChild(el('div', { class: 'planning-empty' },
+      el('div', { class: 'big' }, 'VIDE.'),
+      el('div', {}, 'Personne (toi inclus) n\'a sélectionné de concert pour ce jour.')
+    ));
+    return;
+  }
+  for (const k of sortedKeys) {
+    const slot = slots[k];
+    // Group items by concert
+    const byConcert = {};
+    for (const item of slot.items) {
+      const cid = item.concert.id;
+      if (!byConcert[cid]) byConcert[cid] = { concert: item.concert, people: [] };
+      byConcert[cid].people.push(item.person);
+    }
+    const slotEl = el('div', { class: 'group-slot' });
+    slotEl.appendChild(el('div', { class: 'slot-time' }, slot.time));
+    for (const cid in byConcert) {
+      const { concert, people } = byConcert[cid];
+      const stage = stageById[concert.st];
+      const row = el('div', { class: 'slot-row' });
+      row.appendChild(el('div', { class: 'stage-stripe', style: { background: stage.color } }));
+      const info = el('div', { class: 'info' });
+      info.appendChild(el('div', { class: 'concert-name' }, concert.n));
+      info.appendChild(el('div', { class: 'concert-meta' }, `${stage.label} · ${concert.s} → ${concert.e}`));
+      row.appendChild(info);
+      const avatars = el('div', { class: 'avatars' });
+      for (const p of people) {
+        avatars.appendChild(el('div', { class: 'avatar', style: { background: p.color }, title: p.name }, p.name.charAt(0)));
+      }
+      row.appendChild(avatars);
+      slotEl.appendChild(row);
+    }
+    root.appendChild(slotEl);
+  }
+}
+
+function render() {
+  renderIdentity();
+  renderDays();
+  renderViewTabs();
+  renderStats();
+  if (state.view === 'lineup') renderLineup();
+  else if (state.view === 'planning') renderPlanning();
+  else if (state.view === 'group') renderGroup();
+}
+
+// ---------- Modals ----------
+function showModal(title, body) {
+  closeModal();
+  const back = el('div', { class: 'modal-back', onClick: (e) => { if (e.target === back) closeModal(); } });
+  const modal = el('div', { class: 'modal' });
+  const head = el('div', { class: 'modal-head' });
+  head.appendChild(el('h2', {}, title));
+  head.appendChild(el('button', { class: 'modal-close', onClick: closeModal }, '✕'));
+  modal.appendChild(head);
+  const bodyEl = el('div', { class: 'modal-body' });
+  if (typeof body === 'string') bodyEl.innerHTML = body;
+  else if (Array.isArray(body)) body.forEach(c => bodyEl.appendChild(c));
+  else bodyEl.appendChild(body);
+  modal.appendChild(bodyEl);
+  back.appendChild(modal);
+  $('#modal-root').appendChild(back);
+}
+function closeModal() {
+  $('#modal-root').innerHTML = '';
+  // stop any camera stream
+  if (window.__scanStream) {
+    window.__scanStream.getTracks().forEach(t => t.stop());
+    window.__scanStream = null;
+  }
+}
+
+function openIdentity() {
+  const nameInput = el('input', { type: 'text', value: state.user.name, maxlength: 12 });
+  const picker = el('div', { class: 'color-picker' });
+  let chosenColor = state.user.color;
+  for (const c of COLORS) {
+    const sw = el('div', {
+      class: 'color-swatch' + (c === chosenColor ? ' active' : ''),
+      style: { background: c },
+      onClick: () => {
+        chosenColor = c;
+        $$('.color-swatch', picker).forEach(s => s.classList.remove('active'));
+        sw.classList.add('active');
+      }
+    });
+    picker.appendChild(sw);
+  }
+  showModal('IDENTITÉ', [
+    el('p', {}, 'Ton pseudo et ta couleur. Visibles par tes amis quand tu partages ton planning.'),
+    el('label', {}, 'Pseudo'),
+    nameInput,
+    el('label', {}, 'Couleur'),
+    picker,
+    el('div', { class: 'btn-row' },
+      el('button', {
+        class: 'btn primary',
+        onClick: () => {
+          state.user.name = nameInput.value.trim() || 'MOI';
+          state.user.color = chosenColor;
+          save();
+          closeModal();
+          render();
+          toast('Identité enregistrée');
+        }
+      }, 'OK')
+    )
+  ]);
+}
+
+function buildPayload() {
+  return {
+    v: 1,
+    t: 'sched',
+    n: state.user.name,
+    c: state.user.color,
+    ids: [...state.selected],
+    mp: state.meetpoints
+  };
+}
+
+function openQR() {
+  const payload = buildPayload();
+  const payloadStr = JSON.stringify(payload);
+  // Generate QR
+  const qr = qrcode(0, 'M');
+  qr.addData(payloadStr);
+  qr.make();
+  const svgStr = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
+
+  const qrBox = el('div', { class: 'qr-box', html: svgStr });
+
+  showModal('MON QR', [
+    el('p', {}, `Partage ton planning : tes potes scannent ce code (avec "SCAN") et leur app importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}${payload.mp.length?' + '+payload.mp.length+' rdv':''}.`),
+    qrBox,
+    el('label', {}, 'Ou copie-colle ce texte (à coller dans "COLLER")'),
+    el('div', { class: 'qr-payload' }, payloadStr),
+    el('div', { class: 'btn-row' },
+      el('button', {
+        class: 'btn',
+        onClick: () => {
+          navigator.clipboard?.writeText(payloadStr);
+          toast('Copié');
+        }
+      }, 'Copier le texte'),
+      el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
+    )
+  ]);
+}
+
+async function openScan() {
+  const video = el('video', { autoplay: true, muted: true, playsinline: true });
+  const status = el('div', { class: 'scan-status' }, 'Initialisation caméra…');
+  const box = el('div', { class: 'scan-box' });
+  box.appendChild(video);
+  box.appendChild(el('div', { class: 'overlay' }));
+
+  showModal('SCAN QR', [
+    el('p', {}, 'Pointe la caméra vers le QR d\'un ami. La caméra nécessite HTTPS (ou localhost).'),
+    box,
+    status,
+    el('div', { class: 'btn-row' },
+      el('button', { class: 'btn', onClick: () => { closeModal(); openImport(); } }, 'Coller le texte à la place'),
+      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
+    )
+  ]);
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    window.__scanStream = stream;
+    video.srcObject = stream;
+    await video.play();
+    status.textContent = 'Scan en cours…';
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    let last = 0;
+    function tick(ts) {
+      if (!document.body.contains(video)) return;
+      if (ts - last < 200) { requestAnimationFrame(tick); return; }
+      last = ts;
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(data.data, data.width, data.height);
+        if (code) {
+          stream.getTracks().forEach(t => t.stop());
+          window.__scanStream = null;
+          closeModal();
+          handlePayload(code.data);
+          return;
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  } catch (err) {
+    status.textContent = 'Caméra inaccessible. Utilise "Coller le texte" à la place.';
+    status.style.color = 'var(--warn)';
+  }
+}
+
+function openImport() {
+  const ta = el('textarea', { placeholder: 'Colle ici le texte du QR d\'un ami…' });
+  showModal('COLLER UN PLANNING', [
+    el('p', {}, 'Si tu ne peux pas scanner, demande à ton pote de copier le texte de son QR et colle-le ici.'),
+    ta,
+    el('div', { class: 'btn-row' },
+      el('button', {
+        class: 'btn primary',
+        onClick: () => {
+          const v = ta.value.trim();
+          if (!v) return;
+          closeModal();
+          handlePayload(v);
+        }
+      }, 'Importer'),
+      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
+    )
+  ]);
+}
+
+function handlePayload(str) {
+  let payload;
+  try { payload = JSON.parse(str); }
+  catch { toast('Format invalide'); return; }
+  if (payload.t !== 'sched' || !payload.n) { toast('Format inconnu'); return; }
+
+  // Validate concert IDs
+  const validIds = (payload.ids || []).filter(id => concertById[id]);
+  const dropped = (payload.ids || []).length - validIds.length;
+
+  // Upsert friend by name (case-insensitive)
+  const idx = state.friends.findIndex(f => f.name.toLowerCase() === payload.n.toLowerCase());
+  const friend = {
+    id: payload.n + '-' + Date.now(),
+    name: payload.n,
+    color: payload.c || '#888',
+    ids: validIds,
+    visible: true,
+    updated: Date.now()
+  };
+  if (idx >= 0) {
+    friend.id = state.friends[idx].id;
+    state.friends[idx] = friend;
+  } else {
+    state.friends.push(friend);
+  }
+  // Import meetpoints if any
+  let mpAdded = 0;
+  if (Array.isArray(payload.mp)) {
+    for (const m of payload.mp) {
+      if (!state.meetpoints.some(x => x.day === m.day && x.time === m.time && x.label === m.label)) {
+        state.meetpoints.push({ ...m, id: m.id || (Date.now()+'-'+Math.random()) });
+        mpAdded++;
+      }
+    }
+  }
+  save();
+  render();
+  toast(`${payload.n} importé · ${validIds.length} concerts${mpAdded?' · +'+mpAdded+' rdv':''}${dropped?' · '+dropped+' inconnus':''}`);
+}
+
+function openFriends() {
+  const body = [];
+  body.push(el('p', {}, `${state.friends.length} ami${state.friends.length>1?'s':''}. Désactive la visibilité pour les masquer du planning groupe.`));
+  if (state.friends.length === 0) {
+    body.push(el('div', { class: 'empty-state' },
+      el('div', { class: 'big' }, 'SEUL.'),
+      el('div', {}, 'Scanne un QR ou colle un planning pour ajouter un pote.')
+    ));
+  }
+  for (const f of state.friends) {
+    const row = el('div', { class: 'friend-row' });
+    row.appendChild(el('div', { class: 'friend-avatar', style: { background: f.color } }, f.name.charAt(0)));
+    const info = el('div', { class: 'friend-info' });
+    info.appendChild(el('div', { class: 'n' }, f.name));
+    info.appendChild(el('div', { class: 'm' }, `${(f.ids||[]).length} concerts`));
+    row.appendChild(info);
+    const tog = el('button', {
+      class: 'friend-toggle' + (f.visible !== false ? ' on' : ''),
+      onClick: () => {
+        f.visible = !(f.visible !== false);
+        save();
+        openFriends(); render();
+      }
+    });
+    row.appendChild(tog);
+    row.appendChild(el('button', {
+      class: 'btn ghost', style: { padding: '4px 8px', marginLeft: '8px', fontSize: '10px' },
+      onClick: () => {
+        if (confirm(`Supprimer ${f.name} ?`)) {
+          state.friends = state.friends.filter(x => x.id !== f.id);
+          save(); openFriends(); render();
+        }
+      }
+    }, '✕'));
+    body.push(row);
+  }
+  body.push(el('div', { class: 'btn-row' },
+    el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
+  ));
+  showModal('AMIS', body);
+}
+
+function openMeetpoints() {
+  const body = [];
+  body.push(el('p', {}, 'Points de rendez-vous : un horaire, un lieu sur le site (Mainstage, Cardinal Tap, Camping etc), une note optionnelle. Partagés via ton QR.'));
+
+  // List existing
+  for (const mp of state.meetpoints) {
+    const day = dayById[mp.day];
+    const row = el('div', { class: 'mp-row' });
+    row.appendChild(el('div', { class: 'when' }, `${day?day.label:'?'}\n${mp.time}`));
+    const what = el('div', { class: 'what' });
+    what.appendChild(el('div', { class: 'l' }, mp.label));
+    if (mp.note) what.appendChild(el('div', { class: 'n' }, mp.note));
+    row.appendChild(what);
+    row.appendChild(el('button', {
+      class: 'x',
+      onClick: () => {
+        state.meetpoints = state.meetpoints.filter(x => x.id !== mp.id);
+        save(); openMeetpoints();
+      }
+    }, '✕'));
+    body.push(row);
+  }
+  if (state.meetpoints.length === 0) {
+    body.push(el('div', { class: 'empty-state' },
+      el('div', { class: 'big' }, 'AUCUN RDV.'),
+      el('div', {}, 'Ajoute ton premier ci-dessous.')
+    ));
+  }
+
+  // Form
+  body.push(el('label', {}, 'Nouveau RDV'));
+  const daySel = el('select', { style: { background: 'var(--bg-2)', color: 'var(--fg)', padding: '8px', border: '1px solid var(--line-2)', fontFamily: 'var(--mono)', fontSize: '13px', width: '100%' } });
+  for (const d of DAYS) {
+    const opt = el('option', { value: d.id }, d.label + ' — ' + d.full);
+    if (d.id === state.day) opt.selected = true;
+    daySel.appendChild(opt);
+  }
+  const timeIn = el('input', { type: 'text', placeholder: '20:00', maxlength: 5 });
+  const labelIn = el('input', { type: 'text', placeholder: 'Devant le Hellstage' });
+  const noteIn = el('textarea', { placeholder: 'Note optionnelle (covoiturage, qui apporte quoi…)' });
+  body.push(daySel);
+  body.push(el('label', {}, 'Heure'));
+  body.push(timeIn);
+  body.push(el('label', {}, 'Lieu / titre'));
+  body.push(labelIn);
+  body.push(el('label', {}, 'Note (optionnel)'));
+  body.push(noteIn);
+  body.push(el('div', { class: 'btn-row' },
+    el('button', {
+      class: 'btn primary',
+      onClick: () => {
+        if (!labelIn.value.trim() || !timeIn.value.trim()) { toast('Heure et lieu requis'); return; }
+        state.meetpoints.push({
+          id: Date.now()+'-'+Math.random().toString(36).slice(2,6),
+          day: daySel.value,
+          time: timeIn.value.trim(),
+          label: labelIn.value.trim(),
+          note: noteIn.value.trim() || undefined
+        });
+        save(); openMeetpoints();
+      }
+    }, 'Ajouter'),
+    el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
+  ));
+
+  showModal('POINTS DE RDV', body);
+}
+
+// ---------- Wire up ----------
+$('#identity-btn').onclick = openIdentity;
+$('#btn-qr').onclick = openQR;
+$('#btn-scan').onclick = openScan;
+$('#btn-import').onclick = openImport;
+$('#btn-friends').onclick = openFriends;
+$('#btn-meetpoints').onclick = openMeetpoints;
+
+// First-launch identity
+if (!localStorage.getItem('hf_user')) {
+  setTimeout(openIdentity, 300);
+}
+
+// URL import: open page with ?d=<base64-json> to auto-import
+(function urlImport() {
+  const params = new URLSearchParams(location.search);
+  const d = params.get('d');
+  if (!d) return;
+  try {
+    const decoded = atob(d.replace(/-/g,'+').replace(/_/g,'/'));
+    handlePayload(decoded);
+    history.replaceState({}, '', location.pathname);
+  } catch (e) { console.warn('URL import failed', e); }
+})();
+
+render();
+</script>
