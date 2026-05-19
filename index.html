@@ -324,6 +324,33 @@
   }
   .group-slot .slot-row .info-btn:hover { color: var(--fg); border-color: var(--fg-mute); }
 
+  /* ============ Lineup mode toggle ============ */
+  .lineup-mode-toggle {
+    display: flex; gap: 0;
+    padding: 10px 14px 6px;
+  }
+  .lineup-mode-toggle .lm-tab {
+    padding: 6px 12px;
+    color: var(--fg-mute);
+    border: 1px solid var(--line);
+    border-right: none;
+    font-family: var(--display); letter-spacing: 0.1em; font-size: 11px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .lineup-mode-toggle .lm-tab:last-child { border-right: 1px solid var(--line); }
+  .lineup-mode-toggle .lm-tab.active {
+    color: var(--fg); background: var(--bg-3); border-color: var(--line-2);
+  }
+
+  /* Lineup byTime time slot */
+  .time-slot { padding: 4px 0 8px; }
+  .time-slot .slot-time {
+    font-family: var(--display); font-size: 18px;
+    color: var(--fg-mute); letter-spacing: 0.08em;
+    padding: 6px 14px 4px;
+  }
+
   /* ============ NOW line ============ */
   .now-line {
     display: flex; align-items: center; gap: 10px;
@@ -1184,6 +1211,7 @@ let state = {
   friends: load('hf_friends', []), // [{id, name, color, ids: [], visible: true}]
   view: load('hf_view', 'lineup'),
   day: todayFestivalDay() || load('hf_day', 'thu18'),
+  lineupMode: load('hf_lineupMode', 'byStage'),
 };
 
 // Returns festival day id if today matches a festival date, else null.
@@ -1205,6 +1233,7 @@ function save() {
   localStorage.setItem('hf_friends', JSON.stringify(state.friends));
   localStorage.setItem('hf_view', JSON.stringify(state.view));
   localStorage.setItem('hf_day', JSON.stringify(state.day));
+  localStorage.setItem('hf_lineupMode', JSON.stringify(state.lineupMode));
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1329,8 +1358,51 @@ function renderLineup() {
   const root = $('#content');
   root.innerHTML = '';
   const day = state.day;
-  const stagesInDay = STAGES.filter(s => CONCERTS.some(c => c.d === day && c.st === s.id));
   const conflicts = conflictsFor(state.selected);
+  const nowInfo = getNow();
+  const showNow = nowInfo && nowInfo.dayId === day;
+
+  // Mode toggle (PAR SCÈNE / PAR HEURE)
+  const toggle = el('div', { class: 'lineup-mode-toggle' });
+  const mkBtn = (mode, label) => el('button', {
+    class: 'lm-tab' + (state.lineupMode === mode ? ' active' : ''),
+    onClick: () => { state.lineupMode = mode; save(); render(); }
+  }, label);
+  toggle.appendChild(mkBtn('byStage', 'PAR SCÈNE'));
+  toggle.appendChild(mkBtn('byTime', 'PAR HEURE'));
+  root.appendChild(toggle);
+
+  if (state.lineupMode === 'byTime') {
+    const concertsOfDay = CONCERTS.filter(c => c.d === day)
+      .sort((a,b) => toMin(a.s) - toMin(b.s));
+    const slots = {};
+    for (const c of concertsOfDay) {
+      const key = toMin(c.s);
+      if (!slots[key]) slots[key] = { time: c.s, concerts: [] };
+      slots[key].concerts.push(c);
+    }
+    const sortedKeys = Object.keys(slots).map(Number).sort((a,b) => a-b);
+    let nowInserted = false;
+    for (const k of sortedKeys) {
+      if (showNow && !nowInserted && nowInfo.min < k) {
+        root.appendChild(nowLineEl(nowInfo.hm));
+        nowInserted = true;
+      }
+      const slot = slots[k];
+      const slotEl = el('div', { class: 'time-slot' });
+      slotEl.appendChild(el('div', { class: 'slot-time' }, slot.time));
+      for (const c of slot.concerts) {
+        slotEl.appendChild(concertCard(c, { conflicts }));
+      }
+      root.appendChild(slotEl);
+    }
+    if (showNow && !nowInserted) root.appendChild(nowLineEl(nowInfo.hm));
+    return;
+  }
+
+  // byStage (default): one NOW banner at top, stages keep their existing layout
+  if (showNow) root.appendChild(nowLineEl(nowInfo.hm));
+  const stagesInDay = STAGES.filter(s => CONCERTS.some(c => c.d === day && c.st === s.id));
   for (const stage of stagesInDay) {
     const group = el('div', { class: 'stage-group' });
     const header = el('div', { class: 'stage-header' });
