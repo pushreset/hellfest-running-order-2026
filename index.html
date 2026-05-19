@@ -1244,6 +1244,18 @@ function openIdentity() {
   ]);
 }
 
+// Public app URL — scanning the QR opens this and auto-imports via ?d=
+const SHARE_BASE = 'https://pushreset.github.io/hellfest-running-order-2026/';
+
+// UTF-8 safe base64url (handles accents in names / meetpoints)
+function b64urlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64urlDecode(b64) {
+  return decodeURIComponent(escape(atob(b64.replace(/-/g,'+').replace(/_/g,'/'))));
+}
+
 function buildPayload() {
   return {
     v: 1,
@@ -1258,27 +1270,28 @@ function buildPayload() {
 function openQR() {
   const payload = buildPayload();
   const payloadStr = JSON.stringify(payload);
-  // Generate QR
+  const shareUrl = SHARE_BASE + '?d=' + b64urlEncode(payloadStr);
+  // Generate QR — encodes the public app URL so any phone camera works
   const qr = qrcode(0, 'M');
-  qr.addData(payloadStr);
+  qr.addData(shareUrl);
   qr.make();
   const svgStr = qr.createSvgTag({ cellSize: 6, margin: 0, scalable: true });
 
   const qrBox = el('div', { class: 'qr-box', html: svgStr });
 
   showModal('MON QR', [
-    el('p', {}, `Partage ton planning : tes potes scannent ce code (avec "SCAN") et leur app importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}${payload.mp.length?' + '+payload.mp.length+' rdv':''}.`),
+    el('p', {}, `Partage ton planning : tes potes scannent ce code (appareil photo ou "SCAN"), le site s'ouvre et importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}${payload.mp.length?' + '+payload.mp.length+' rdv':''}.`),
     qrBox,
-    el('label', {}, 'Ou copie-colle ce texte (à coller dans "COLLER")'),
-    el('div', { class: 'qr-payload' }, payloadStr),
+    el('label', {}, 'Ou copie-colle ce lien (à ouvrir, ou coller dans "COLLER")'),
+    el('div', { class: 'qr-payload' }, shareUrl),
     el('div', { class: 'btn-row' },
       el('button', {
         class: 'btn',
         onClick: () => {
-          navigator.clipboard?.writeText(payloadStr);
+          navigator.clipboard?.writeText(shareUrl);
           toast('Copié');
         }
-      }, 'Copier le texte'),
+      }, 'Copier le lien'),
       el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
     )
   ]);
@@ -1360,6 +1373,15 @@ function openImport() {
 }
 
 function handlePayload(str) {
+  str = (str || '').trim();
+  // Accept a full share URL (or any ?d= link), not only raw JSON
+  if (/^https?:\/\//i.test(str) || /[?&]d=/.test(str)) {
+    try {
+      const u = new URL(str, location.href);
+      const d = u.searchParams.get('d');
+      if (d) str = b64urlDecode(d);
+    } catch { /* fall through, try as JSON */ }
+  }
   let payload;
   try { payload = JSON.parse(str); }
   catch { toast('Format invalide'); return; }
@@ -1529,7 +1551,7 @@ if (!localStorage.getItem('hf_user')) {
   const d = params.get('d');
   if (!d) return;
   try {
-    const decoded = atob(d.replace(/-/g,'+').replace(/_/g,'/'));
+    const decoded = b64urlDecode(d);
     handlePayload(decoded);
     history.replaceState({}, '', location.pathname);
   } catch (e) { console.warn('URL import failed', e); }
