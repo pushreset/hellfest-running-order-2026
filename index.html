@@ -74,11 +74,6 @@
     line-height: 1;
     display: flex; align-items: center; gap: 8px;
   }
-  .brand-icon {
-    width: 30px; height: 30px;
-    object-fit: contain;
-    display: block;
-  }
   .brand .x { color: var(--red); }
   .brand .y { color: var(--fg-mute); font-size: 13px; font-family: var(--mono); font-weight: 700; letter-spacing: 0.1em; }
   .identity {
@@ -492,7 +487,7 @@
 <div id="app">
   <div class="stickytop">
   <header class="topbar">
-    <div class="brand"><img class="brand-icon" src="logo.png" alt=""><span class="x">HELL</span>FEST <span class="y">'26</span></div>
+    <div class="brand"><span class="x">HELL</span>FEST <span class="y">'26</span></div>
     <button id="identity-btn" class="identity">
       <span id="identity-name">MOI</span>
       <span class="dot" id="identity-dot" style="color: #e63946"></span>
