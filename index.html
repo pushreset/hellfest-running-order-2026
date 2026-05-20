@@ -1348,6 +1348,11 @@ const concertById = Object.fromEntries(CONCERTS.map(c => [c.id, c]));
 const COLORS = ['#e63946','#f5b400','#84cc16','#06b6d4','#a855f7','#ec4899','#f97316','#22c55e','#3b82f6','#eab308'];
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 12 10 17 19 8"/></svg>';
 
+function genUid() {
+  if (crypto?.randomUUID) return crypto.randomUUID();
+  return 'u-' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
 let state = {
   user: load('hf_user', { name: 'MOI', color: '#e63946' }),
   selected: new Set(load('hf_selected', [])),
@@ -1358,6 +1363,12 @@ let state = {
   lineupFilter: load('hf_lineupFilter', 'all'),
   planningMode: load('hf_planningMode', 'list'),
 };
+
+// Ensure user has a stable unique id (generated on first launch, migrates legacy users)
+if (!state.user.uid) {
+  state.user.uid = genUid();
+  localStorage.setItem('hf_user', JSON.stringify(state.user));
+}
 
 // Returns festival day id if today matches a festival date, else null.
 function todayFestivalDay() {
@@ -1981,6 +1992,7 @@ function buildPayload() {
   return {
     v: 1,
     t: 'sched',
+    uid: state.user.uid,
     n: state.user.name,
     c: state.user.color,
     ids: [...state.selected]
@@ -2017,22 +2029,28 @@ function openQR() {
   ]);
 }
 
-// Import the payload as a friend's schedule (shown in GROUPE view)
+// Import the payload as a friend's schedule (shown in GROUPE view).
+// Match priority: stable uid (rescan = update). Falls back to name for legacy QRs.
 function importAsFriend(payload, validIds, dropped) {
-  const idx = state.friends.findIndex(f => f.name.toLowerCase() === payload.n.toLowerCase());
+  let idx = -1;
+  if (payload.uid) idx = state.friends.findIndex(f => f.uid === payload.uid);
+  if (idx < 0) idx = state.friends.findIndex(f => f.name.toLowerCase() === payload.n.toLowerCase());
+  const prev = idx >= 0 ? state.friends[idx] : null;
   const friend = {
-    id: payload.n + '-' + Date.now(),
+    id: prev ? prev.id : (payload.n + '-' + Date.now()),
+    uid: payload.uid || prev?.uid,
     name: payload.n,
     color: payload.c || '#888',
     ids: validIds,
-    visible: true,
+    visible: prev ? prev.visible !== false : true,
     updated: Date.now()
   };
-  if (idx >= 0) { friend.id = state.friends[idx].id; state.friends[idx] = friend; }
+  if (prev) state.friends[idx] = friend;
   else state.friends.push(friend);
   save();
   render();
-  toast(`${payload.n} importé · ${validIds.length} concerts${dropped?' · '+dropped+' inconnus':''}`);
+  const verb = prev ? 'mis à jour' : 'importé';
+  toast(`${payload.n} ${verb} · ${validIds.length} concerts${dropped?' · '+dropped+' inconnus':''}`);
 }
 
 // Import the payload as MY OWN setlist — transfer from another device.
