@@ -397,6 +397,32 @@
     .grid-block .gb-name { font-size: 10px; }
   }
 
+  /* Planning print button (lives in planning-mode-toggle, grid mode only) */
+  .planning-mode-group { display: flex; gap: 0; }
+  .planning-print-btn {
+    margin-left: auto;
+    padding: 6px 12px;
+    color: var(--fg-mute);
+    border: 1px solid var(--line);
+    font-family: var(--display); letter-spacing: 0.1em; font-size: 11px;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .planning-print-btn:hover { color: var(--fg); border-color: var(--line-2); }
+
+  /* Print-only header rendered above the grid */
+  .print-only { display: none; }
+  .grid-print-header {
+    font-family: var(--display); letter-spacing: 0.06em;
+    font-size: 18px;
+    padding: 0 0 8px;
+  }
+  .grid-print-header .pmeta {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.08em; opacity: 0.7;
+  }
+
   /* ============ GROUP view ============ */
   .group-slot {
     padding: 8px 14px;
@@ -684,6 +710,48 @@
     .viewbar { padding: 8px 10px; font-size: 10px; letter-spacing: 0.06em; }
     .view-tab { padding: 8px 8px; }
     .stats { font-size: 10px; }
+  }
+
+  /* ============ PRINT (Mon Planning grid) ============ */
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body {
+      background: #fff !important;
+      color: #000 !important;
+    }
+    body { padding-bottom: 0 !important; }
+    body::before { display: none !important; }
+    .stickytop, .actionbar, .planning-mode-toggle, .lineup-mode-toggle,
+    .viewbar, .modal-back, .toast { display: none !important; }
+    .content { padding: 0 !important; }
+    .print-only { display: block !important; }
+    .grid-print-header { color: #000; }
+    .grid-print-header .pmeta { color: #333; opacity: 1; }
+
+    .grid-wrap {
+      overflow: visible !important;
+      --stage-col: 130px;
+      --time-col: 50px;
+    }
+    .grid-head { background: #fff !important; border-bottom-color: #000 !important; }
+    .grid-head .gh { color: #000 !important; border-left-color: #888 !important; }
+    .grid-col { border-left-color: #888 !important; }
+    .grid-col .row-line { border-top-color: #ddd !important; }
+    .grid-col .row-line.hour { border-top-color: #888 !important; }
+    .grid-times { border-right-color: #888 !important; }
+    .grid-times .gt { color: #000 !important; }
+
+    /* Print own planning only: hide unselected blocks */
+    .grid-block:not(.selected) { display: none !important; }
+    .grid-block.selected {
+      color: #fff !important;
+      border-color: #000 !important;
+      box-shadow: none !important;
+      page-break-inside: avoid;
+    }
+    .grid-block.selected .gb-name,
+    .grid-block.selected .gb-time { color: #fff !important; }
+    .grid-nowline { display: none !important; }
   }
 </style>
 
@@ -1639,12 +1707,21 @@ function renderPlanning() {
 
   // Mode toggle (LISTE / GRILLE)
   const toggle = el('div', { class: 'planning-mode-toggle' });
+  const group = el('div', { class: 'planning-mode-group' });
   const mkBtn = (mode, label) => el('button', {
     class: 'lm-tab' + (state.planningMode === mode ? ' active' : ''),
     onClick: () => { state.planningMode = mode; save(); render(); }
   }, label);
-  toggle.appendChild(mkBtn('list', 'LISTE'));
-  toggle.appendChild(mkBtn('grid', 'GRILLE'));
+  group.appendChild(mkBtn('list', 'LISTE'));
+  group.appendChild(mkBtn('grid', 'GRILLE'));
+  toggle.appendChild(group);
+  if (state.planningMode === 'grid') {
+    toggle.appendChild(el('button', {
+      class: 'planning-print-btn',
+      title: 'Imprimer mon planning',
+      onClick: () => window.print()
+    }, '⎙ IMPRIMER'));
+  }
   root.appendChild(toggle);
 
   if (state.planningMode === 'grid') { renderPlanningGrid(root); return; }
@@ -1733,6 +1810,17 @@ function renderPlanningGrid(root) {
   const bodyHeight = totalMin * PX_PER_MIN;
 
   const wrap = el('div', { class: 'grid-wrap', style: { '--stage-count': mainStages.length } });
+
+  // Print-only header (day + user name), hidden on screen
+  const dayLabel = dayById[day]?.label || day;
+  const selectedCount = CONCERTS.filter(c => c.d === day && MAIN_IDS.includes(c.st) && state.selected.has(c.id)).length;
+  const printHeader = el('div', { class: 'print-only grid-print-header' });
+  printHeader.appendChild(document.createTextNode(`HELLFEST '26 · ${dayLabel}`));
+  printHeader.appendChild(el('div', { class: 'pmeta' },
+    `${state.user.name} · ${selectedCount} concert${selectedCount>1?'s':''}`
+  ));
+  wrap.appendChild(printHeader);
+
   // Header
   const head = el('div', { class: 'grid-head' });
   head.appendChild(el('div', { class: 'gh' }, ''));
