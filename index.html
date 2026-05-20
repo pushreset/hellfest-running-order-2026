@@ -397,6 +397,120 @@
     .grid-block .gb-name { font-size: 10px; }
   }
 
+  /* ============ PLANNING timeline view (horizontal gantt) ============ */
+  .tl-wrap {
+    --tl-label-col: 110px;
+    --tl-row-h: 52px;
+    --tl-px-per-min: 2.5; /* 1h = 150px */
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: 0 0 16px;
+    -webkit-overflow-scrolling: touch;
+    border-top: 1px solid var(--line);
+  }
+  .tl-inner { position: relative; }
+  .tl-row {
+    display: grid;
+    grid-template-columns: var(--tl-label-col) auto;
+    border-bottom: 1px solid var(--line);
+    min-height: var(--tl-row-h);
+  }
+  .tl-axis-row {
+    display: grid;
+    grid-template-columns: var(--tl-label-col) auto;
+    position: sticky; top: 0; z-index: 6;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .tl-label {
+    position: sticky; left: 0; z-index: 3;
+    background: var(--bg);
+    padding: 6px 8px;
+    border-right: 1px solid var(--line-2);
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.06em; color: var(--fg);
+    line-height: 1.1;
+  }
+  .tl-label .stripe {
+    display: inline-block; width: 3px; height: 22px;
+    flex-shrink: 0;
+  }
+  .tl-label.tl-empty {
+    background: var(--bg);
+    z-index: 4;
+  }
+  .tl-axis {
+    position: relative;
+    height: 22px;
+  }
+  .tl-axis .tl-tick {
+    position: absolute; top: 0; bottom: 0;
+    transform: translateX(-50%);
+    font-family: var(--mono); font-size: 9px;
+    color: var(--fg-mute);
+    padding-top: 5px;
+    white-space: nowrap;
+  }
+  .tl-axis .tl-tick.hour { color: var(--fg-dim); }
+  .tl-track {
+    position: relative;
+    min-height: var(--tl-row-h);
+  }
+  .tl-track .col-line {
+    position: absolute; top: 0; bottom: 0;
+    border-left: 1px dashed var(--line);
+  }
+  .tl-track .col-line.hour { border-left-color: var(--line-2); }
+  .tl-block {
+    position: absolute;
+    top: 4px; bottom: 4px;
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    background: var(--bg-2);
+    color: var(--fg-dim);
+    border-color: var(--line);
+    display: flex; flex-direction: column; justify-content: center;
+    transition: transform 0.08s;
+  }
+  .tl-block:hover { transform: scale(1.02); }
+  .tl-block .tb-name {
+    font-family: var(--display); font-size: 10px;
+    letter-spacing: 0.04em; line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tl-block .tb-time {
+    font-family: var(--mono); font-size: 9px;
+    margin-top: 2px;
+    opacity: 0.85;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tl-block.selected { color: var(--fg); border-color: rgba(255,255,255,0.12); }
+  .tl-block.selected .tb-name { color: #fff; }
+  .tl-block.conflict { outline: 2px solid var(--warn); outline-offset: -2px; }
+  .tl-nowline {
+    position: absolute;
+    top: 0; bottom: 0; width: 0;
+    border-left: 2px solid var(--red);
+    pointer-events: none;
+    z-index: 5;
+  }
+  .tl-nowline .nt {
+    position: absolute; top: 2px; left: 4px;
+    background: var(--red); color: var(--bg);
+    font-family: var(--display); font-size: 10px;
+    padding: 1px 4px; letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  @media (max-width: 420px) {
+    .tl-wrap { --tl-label-col: 86px; --tl-px-per-min: 2; }
+    .tl-block .tb-name { font-size: 9px; }
+    .tl-block .tb-time { font-size: 8px; }
+  }
+
   /* Planning print button (lives in planning-mode-toggle, grid mode only) */
   .planning-mode-group { display: flex; gap: 0; }
   .planning-print-btn {
@@ -1783,6 +1897,7 @@ function renderPlanning() {
   }, label);
   group.appendChild(mkBtn('list', 'LISTE'));
   group.appendChild(mkBtn('grid', 'GRILLE'));
+  group.appendChild(mkBtn('timeline', 'TIMELINE'));
   toggle.appendChild(group);
   if (state.planningMode === 'grid') {
     toggle.appendChild(el('button', {
@@ -1794,6 +1909,7 @@ function renderPlanning() {
   root.appendChild(toggle);
 
   if (state.planningMode === 'grid') { renderPlanningGrid(root); return; }
+  if (state.planningMode === 'timeline') { renderPlanningTimeline(root); return; }
 
   const conflicts = conflictsFor(state.selected);
   const mine = CONCERTS.filter(c => c.d === day && state.selected.has(c.id))
@@ -1953,6 +2069,127 @@ function renderPlanningGrid(root) {
 
   wrap.appendChild(body);
   root.appendChild(wrap);
+}
+
+// Horizontal gantt: rows = stages, X-axis = time, scroll horizontal.
+// Shows all stages with concerts that day (main + hellcity). Click toggles selection.
+function renderPlanningTimeline(root) {
+  const day = state.day;
+  const concerts = CONCERTS.filter(c => c.d === day);
+  if (concerts.length === 0) {
+    root.appendChild(el('div', { class: 'planning-empty' },
+      el('div', { class: 'big' }, 'PAS DE CONCERTS.'),
+      el('div', {}, 'Choisis un autre jour.')
+    ));
+    return;
+  }
+
+  const stagesInDay = STAGES.filter(s => concerts.some(c => c.st === s.id));
+  const conflicts = conflictsFor(state.selected);
+
+  const starts = concerts.map(c => toMin(c.s));
+  const ends = concerts.map(c => toMin(c.e));
+  const rangeStart = Math.floor(Math.min(...starts) / 30) * 30;
+  const rangeEnd = Math.ceil(Math.max(...ends) / 30) * 30;
+  const PX_PER_MIN = window.matchMedia('(max-width: 420px)').matches ? 2 : 2.5;
+  const totalMin = rangeEnd - rangeStart;
+  const trackWidth = totalMin * PX_PER_MIN;
+
+  const wrap = el('div', { class: 'tl-wrap' });
+  const inner = el('div', { class: 'tl-inner', style: { width: `calc(var(--tl-label-col) + ${trackWidth}px)` } });
+
+  // Time axis (header)
+  const axisRow = el('div', { class: 'tl-axis-row' });
+  axisRow.appendChild(el('div', { class: 'tl-label tl-empty' }));
+  const axis = el('div', { class: 'tl-axis', style: { width: trackWidth + 'px' } });
+  for (let m = rangeStart; m <= rangeEnd; m += 30) {
+    const left = (m - rangeStart) * PX_PER_MIN;
+    const isHour = (m % 60) === 0;
+    const hh = String(Math.floor((m % (24*60)) / 60)).padStart(2,'0');
+    const mm = String(m % 60).padStart(2,'0');
+    axis.appendChild(el('div', {
+      class: 'tl-tick' + (isHour ? ' hour' : ''),
+      style: { left: left + 'px' }
+    }, `${hh}:${mm}`));
+  }
+  axisRow.appendChild(axis);
+  inner.appendChild(axisRow);
+
+  // One row per stage
+  for (const stage of stagesInDay) {
+    const row = el('div', { class: 'tl-row' });
+    const label = el('div', { class: 'tl-label' });
+    label.appendChild(el('span', { class: 'stripe', style: { background: stage.color } }));
+    label.appendChild(document.createTextNode(stage.label));
+    row.appendChild(label);
+    const track = el('div', { class: 'tl-track', style: { width: trackWidth + 'px' } });
+    // Half-hour grid lines
+    for (let m = rangeStart + 30; m < rangeEnd; m += 30) {
+      const left = (m - rangeStart) * PX_PER_MIN;
+      const isHour = (m % 60) === 0;
+      track.appendChild(el('div', {
+        class: 'col-line' + (isHour ? ' hour' : ''),
+        style: { left: left + 'px' }
+      }));
+    }
+    const stageConcerts = concerts.filter(c => c.st === stage.id);
+    for (const c of stageConcerts) {
+      const left = (toMin(c.s) - rangeStart) * PX_PER_MIN;
+      const width = (toMin(c.e) - toMin(c.s)) * PX_PER_MIN;
+      const selected = state.selected.has(c.id);
+      const hasConflict = selected && conflicts.has(c.id);
+      const blockStyle = { left: left + 'px', width: (width - 2) + 'px' };
+      if (selected) {
+        blockStyle.background = stage.color;
+        blockStyle.borderColor = stage.color;
+      }
+      const block = el('div', {
+        class: 'tl-block' + (selected ? ' selected' : '') + (hasConflict ? ' conflict' : ''),
+        style: blockStyle,
+        title: `${c.n} · ${c.s} → ${c.e}`,
+        onClick: () => {
+          if (state.selected.has(c.id)) state.selected.delete(c.id);
+          else state.selected.add(c.id);
+          save(); render();
+        }
+      });
+      block.appendChild(el('div', { class: 'tb-name' }, c.n));
+      if (width >= 60) {
+        block.appendChild(el('div', { class: 'tb-time' }, `${c.s} > ${c.e}`));
+      }
+      track.appendChild(block);
+    }
+    row.appendChild(track);
+    inner.appendChild(row);
+  }
+
+  // NOW line if today
+  const nowInfo = getNow();
+  if (nowInfo && nowInfo.dayId === day && nowInfo.min >= rangeStart && nowInfo.min <= rangeEnd) {
+    const labelColPx = window.matchMedia('(max-width: 420px)').matches ? 86 : 110;
+    const left = labelColPx + (nowInfo.min - rangeStart) * PX_PER_MIN;
+    const nl = el('div', { class: 'tl-nowline', style: { left: left + 'px' } });
+    nl.appendChild(el('span', { class: 'nt' }, nowInfo.hm));
+    inner.appendChild(nl);
+  }
+
+  wrap.appendChild(inner);
+  root.appendChild(wrap);
+
+  // Auto-scroll to NOW if today, else to start of selected concerts, else to range start
+  requestAnimationFrame(() => {
+    if (nowInfo && nowInfo.dayId === day && nowInfo.min >= rangeStart && nowInfo.min <= rangeEnd) {
+      const labelColPx = window.matchMedia('(max-width: 420px)').matches ? 86 : 110;
+      const targetX = labelColPx + (nowInfo.min - rangeStart) * PX_PER_MIN;
+      wrap.scrollLeft = Math.max(0, targetX - wrap.clientWidth / 2);
+    } else {
+      const mineStarts = concerts.filter(c => state.selected.has(c.id)).map(c => toMin(c.s));
+      if (mineStarts.length) {
+        const firstMin = Math.min(...mineStarts);
+        wrap.scrollLeft = Math.max(0, (firstMin - rangeStart) * PX_PER_MIN - 40);
+      }
+    }
+  });
 }
 
 const PRINT_MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
