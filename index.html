@@ -718,34 +718,53 @@
      the time range to the selected concerts. */
   #print-area { display: none; }
   @media print {
-    @page { size: A4 landscape; margin: 8mm; }
+    /* margin: 0 also suppresses the browser-added URL/title header */
+    @page { size: A4 landscape; margin: 0; }
     html, body {
       background: #fff !important;
       color: #000 !important;
       margin: 0 !important;
       padding: 0 !important;
+      width: 100%;
+      height: 100%;
     }
     body::before { display: none !important; }
     #app, .toast { display: none !important; }
-    #print-area { display: block !important; }
+    /* width/height = 100% of the @page area; paper-size agnostic
+       (A4 / Letter / etc) so nothing gets cut on the right edge. */
+    #print-area {
+      display: block !important;
+      width: 100%; height: 100vh;
+      padding: 7mm 9mm;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
 
-    .pg-wrap { color: #000; }
+    .pg-wrap {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      color: #000;
+    }
     .pg-print-header {
+      flex-shrink: 0;
       display: flex; align-items: baseline; justify-content: space-between;
-      padding: 0 0 6px; margin-bottom: 6px;
+      padding: 0 0 4px; margin-bottom: 4px;
       border-bottom: 1px solid #000;
     }
     .pgh-title {
       font-family: 'Anton', 'Impact', sans-serif;
-      font-size: 20px; letter-spacing: 0.05em;
+      font-size: 18px; letter-spacing: 0.05em;
     }
     .pgh-meta {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px; letter-spacing: 0.06em; color: #333;
+      font-size: 10px; letter-spacing: 0.06em; color: #333;
     }
-    .pg-head { display: grid; border-bottom: 1px solid #000; }
+    .pg-head {
+      flex-shrink: 0;
+      display: grid; border-bottom: 1px solid #000;
+    }
     .pg-head .pgh {
-      padding: 4px 4px 6px;
+      padding: 3px 4px 5px;
       text-align: center;
       font-family: 'Anton', 'Impact', sans-serif;
       font-size: 11px; letter-spacing: 0.06em;
@@ -755,7 +774,11 @@
     .pg-head .pgh .stripe {
       display: block; height: 3px; width: 70%; margin: 0 auto 3px;
     }
-    .pg-body { display: grid; position: relative; }
+    .pg-body {
+      flex: 1; min-height: 0;
+      display: grid;
+      position: relative;
+    }
     .pg-times { position: relative; border-right: 1px solid #000; }
     .pg-times .pgt {
       position: absolute; left: 0; right: 4px;
@@ -783,12 +806,12 @@
     .pg-block.conflict { outline: 2px solid #f5b400; outline-offset: -2px; }
     .pgb-name {
       font-family: 'Anton', 'Impact', sans-serif;
-      font-size: 11px; letter-spacing: 0.04em; line-height: 1.05;
+      font-size: 10px; letter-spacing: 0.04em; line-height: 1.05;
       word-break: break-word;
     }
     .pgb-time {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 8px; margin-top: 2px; opacity: 0.95;
+      font-size: 8px; margin-top: 1px; opacity: 0.95;
     }
   }
 </style>
@@ -1948,12 +1971,10 @@ function buildPrintGrid() {
   const rangeStart = Math.floor(Math.min(...starts) / 30) * 30;
   const rangeEnd = Math.ceil(Math.max(...ends) / 30) * 30;
   const totalMin = rangeEnd - rangeStart;
-
-  // A4 landscape printable ~ 194mm ≈ 733px @ 96dpi. Reserve room for header + stage row.
-  const USABLE_PX = 660;
-  let pxPerMin = USABLE_PX / totalMin;
-  pxPerMin = Math.min(1.4, Math.max(0.55, pxPerMin));
-  const bodyHeight = totalMin * pxPerMin;
+  // Positions are emitted as % of the body height; the CSS sizes the body
+  // to the printable area so the whole grid always fits one A4 page.
+  const pct = (min) => ((min - rangeStart) / totalMin * 100) + '%';
+  const pctH = (min) => (min / totalMin * 100) + '%';
 
   const dayLabel = dayById[day]?.label || day;
   const conflicts = conflictsFor(state.selected);
@@ -1969,7 +1990,7 @@ function buildPrintGrid() {
   ));
   wrap.appendChild(printHeader);
 
-  const gridCols = `48px repeat(${activeStages.length}, 1fr)`;
+  const gridCols = `38px repeat(${activeStages.length}, 1fr)`;
 
   const stageHead = el('div', { class: 'pg-head', style: { gridTemplateColumns: gridCols } });
   stageHead.appendChild(el('div', { class: 'pgh' }, ''));
@@ -1983,42 +2004,39 @@ function buildPrintGrid() {
 
   const body = el('div', {
     class: 'pg-body',
-    style: { gridTemplateColumns: gridCols, height: bodyHeight + 'px' }
+    style: { gridTemplateColumns: gridCols }
   });
 
   const tcol = el('div', { class: 'pg-times' });
   for (let m = rangeStart; m <= rangeEnd; m += 30) {
     const hh = String(Math.floor((m % (24*60)) / 60)).padStart(2,'0');
     const mm = String(m % 60).padStart(2,'0');
-    const top = (m - rangeStart) * pxPerMin;
-    tcol.appendChild(el('div', { class: 'pgt', style: { top: top + 'px' } }, `${hh}:${mm}`));
+    tcol.appendChild(el('div', { class: 'pgt', style: { top: pct(m) } }, `${hh}:${mm}`));
   }
   body.appendChild(tcol);
 
   for (const stage of activeStages) {
     const col = el('div', { class: 'pg-col' });
     for (let m = rangeStart + 30; m < rangeEnd; m += 30) {
-      const top = (m - rangeStart) * pxPerMin;
       const isHour = (m % 60) === 0;
       col.appendChild(el('div', {
         class: 'pg-line' + (isHour ? ' hour' : ''),
-        style: { top: top + 'px' }
+        style: { top: pct(m) }
       }));
     }
     for (const c of selected.filter(x => x.st === stage.id)) {
-      const top = (toMin(c.s) - rangeStart) * pxPerMin;
-      const height = (toMin(c.e) - toMin(c.s)) * pxPerMin;
+      const dur = toMin(c.e) - toMin(c.s);
       const block = el('div', {
         class: 'pg-block' + (conflicts.has(c.id) ? ' conflict' : ''),
         style: {
-          top: top + 'px',
-          height: Math.max(height - 2, 16) + 'px',
+          top: pct(toMin(c.s)),
+          height: pctH(dur),
           background: stage.color,
           borderColor: stage.color
         }
       });
       block.appendChild(el('div', { class: 'pgb-name' }, c.n));
-      if (height >= 24) {
+      if (dur >= 25) {
         block.appendChild(el('div', { class: 'pgb-time' }, `${c.s} > ${c.e}`));
       }
       col.appendChild(block);
