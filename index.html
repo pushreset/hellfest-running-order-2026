@@ -730,14 +730,21 @@
     }
     body::before { display: none !important; }
     #app, .toast { display: none !important; }
-    /* width/height = 100% of the @page area; paper-size agnostic
-       (A4 / Letter / etc) so nothing gets cut on the right edge. */
-    #print-area {
-      display: block !important;
+    #print-area { display: block !important; }
+    /* One .pg-page per festival day. Paper-size agnostic (A4/Letter/etc)
+       so nothing gets cut on the right edge; page-break-after forces
+       each day onto its own sheet. */
+    .pg-page {
       width: 100%; height: 100vh;
       padding: 7mm 9mm;
       box-sizing: border-box;
       overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+    }
+    .pg-page:last-child {
+      page-break-after: auto;
+      break-after: auto;
     }
 
     .pg-wrap {
@@ -1948,20 +1955,17 @@ function renderPlanningGrid(root) {
   root.appendChild(wrap);
 }
 
-// Build a print-only grid for the current day's selected concerts.
-// Scaled to fit a single A4 landscape page, dropping stages with nothing
-// selected and tightening the time range to the actual selection.
-function buildPrintGrid() {
-  const day = state.day;
-  const MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
+const PRINT_MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
+
+// Build a print-only grid for one day's selected concerts. Returns a
+// .pg-page DOM element scaled to one A4 landscape page.
+function buildPrintPage(dayId, conflicts) {
   const selected = CONCERTS.filter(c =>
-    c.d === day && MAIN_IDS.includes(c.st) && state.selected.has(c.id)
+    c.d === dayId && PRINT_MAIN_IDS.includes(c.st) && state.selected.has(c.id)
   );
-  if (selected.length === 0) {
-    toast('Aucun concert sélectionné sur les scènes principales');
-    return false;
-  }
-  const activeStages = MAIN_IDS
+  if (selected.length === 0) return null;
+
+  const activeStages = PRINT_MAIN_IDS
     .filter(id => selected.some(c => c.st === id))
     .map(id => stageById[id])
     .filter(Boolean);
@@ -1971,16 +1975,11 @@ function buildPrintGrid() {
   const rangeStart = Math.floor(Math.min(...starts) / 30) * 30;
   const rangeEnd = Math.ceil(Math.max(...ends) / 30) * 30;
   const totalMin = rangeEnd - rangeStart;
-  // Positions are emitted as % of the body height; the CSS sizes the body
-  // to the printable area so the whole grid always fits one A4 page.
   const pct = (min) => ((min - rangeStart) / totalMin * 100) + '%';
   const pctH = (min) => (min / totalMin * 100) + '%';
 
-  const dayLabel = dayById[day]?.label || day;
-  const conflicts = conflictsFor(state.selected);
-
-  const area = $('#print-area');
-  area.innerHTML = '';
+  const dayLabel = dayById[dayId]?.label || dayId;
+  const page = el('div', { class: 'pg-page' });
   const wrap = el('div', { class: 'pg-wrap' });
 
   const printHeader = el('div', { class: 'pg-print-header' });
@@ -2045,7 +2044,26 @@ function buildPrintGrid() {
   }
 
   wrap.appendChild(body);
-  area.appendChild(wrap);
+  page.appendChild(wrap);
+  return page;
+}
+
+// Build the print payload: one page per festival day that has at least
+// one selected concert on a main stage.
+function buildPrintGrid() {
+  const conflicts = conflictsFor(state.selected);
+  const pages = [];
+  for (const d of DAYS) {
+    const page = buildPrintPage(d.id, conflicts);
+    if (page) pages.push(page);
+  }
+  if (pages.length === 0) {
+    toast('Aucun concert sélectionné sur les scènes principales');
+    return false;
+  }
+  const area = $('#print-area');
+  area.innerHTML = '';
+  for (const p of pages) area.appendChild(p);
   return true;
 }
 
