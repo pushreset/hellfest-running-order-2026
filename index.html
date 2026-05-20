@@ -267,6 +267,136 @@
     margin-bottom: 12px; letter-spacing: 0.06em;
   }
 
+  /* ============ PLANNING grid view (PDF-style) ============ */
+  .planning-mode-toggle {
+    display: flex; gap: 0;
+    padding: 10px 14px 6px;
+  }
+  .planning-mode-toggle .lm-tab {
+    padding: 6px 12px;
+    color: var(--fg-mute);
+    border: 1px solid var(--line);
+    border-right: none;
+    font-family: var(--display); letter-spacing: 0.1em; font-size: 11px;
+    background: transparent;
+    cursor: pointer;
+  }
+  .planning-mode-toggle .lm-tab:last-child { border-right: 1px solid var(--line); }
+  .planning-mode-toggle .lm-tab.active {
+    color: var(--fg); background: var(--bg-3); border-color: var(--line-2);
+  }
+
+  .grid-wrap {
+    --time-col: 44px;
+    --stage-col: 110px;
+    --px-per-min: 1.33; /* 30min = 40px */
+    overflow-x: auto;
+    padding: 6px 0 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .grid-head {
+    display: grid;
+    grid-template-columns: var(--time-col) repeat(var(--stage-count, 6), var(--stage-col));
+    position: sticky; top: 0; z-index: 5;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line-2);
+  }
+  .grid-head .gh {
+    padding: 8px 6px;
+    text-align: center;
+    font-family: var(--display); font-size: 12px; letter-spacing: 0.06em;
+    color: var(--fg);
+    border-left: 1px solid var(--line);
+    line-height: 1.1;
+  }
+  .grid-head .gh:first-child { border-left: none; }
+  .grid-head .gh .stripe {
+    display: block; height: 3px; width: 70%; margin: 0 auto 4px;
+  }
+  .grid-body {
+    display: grid;
+    grid-template-columns: var(--time-col) repeat(var(--stage-count, 6), var(--stage-col));
+    position: relative;
+  }
+  .grid-times {
+    position: relative;
+    border-right: 1px solid var(--line);
+  }
+  .grid-times .gt {
+    position: absolute; left: 0; right: 0;
+    text-align: right;
+    padding-right: 6px;
+    font-family: var(--mono); font-size: 10px;
+    color: var(--fg-mute);
+    transform: translateY(-50%);
+  }
+  .grid-col {
+    position: relative;
+    border-left: 1px solid var(--line);
+  }
+  .grid-col .row-line {
+    position: absolute; left: 0; right: 0;
+    border-top: 1px dashed var(--line);
+  }
+  .grid-col .row-line.hour { border-top-color: var(--line-2); }
+  .grid-block {
+    position: absolute;
+    left: 3px; right: 3px;
+    padding: 5px 6px;
+    border: 1px solid transparent;
+    border-radius: 2px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: transform 0.08s;
+    display: flex; flex-direction: column; justify-content: center;
+    text-align: center;
+    background: var(--bg-2);
+    color: var(--fg-dim);
+    border-color: var(--line);
+  }
+  .grid-block:hover { transform: scale(1.02); }
+  .grid-block .gb-name {
+    font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.04em; line-height: 1.1;
+    word-break: break-word;
+  }
+  .grid-block .gb-time {
+    font-family: var(--mono); font-size: 9px;
+    margin-top: 3px;
+    opacity: 0.9;
+  }
+  .grid-block.selected {
+    color: var(--fg);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .grid-block.selected .gb-name { color: #fff; }
+  .grid-block.conflict {
+    outline: 2px solid var(--warn);
+    outline-offset: -2px;
+  }
+  .grid-nowline {
+    position: absolute; left: var(--time-col); right: 0;
+    height: 0;
+    border-top: 2px solid var(--red);
+    pointer-events: none;
+    z-index: 4;
+  }
+  .grid-nowline::before {
+    content: ''; position: absolute; left: -5px; top: -5px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--red);
+  }
+  .grid-nowline .nt {
+    position: absolute; right: 4px; top: -16px;
+    background: var(--red); color: var(--bg);
+    font-family: var(--display); font-size: 10px;
+    padding: 1px 4px; letter-spacing: 0.08em;
+  }
+  @media (max-width: 420px) {
+    .grid-wrap { --stage-col: 92px; --time-col: 38px; }
+    .grid-block .gb-name { font-size: 10px; }
+  }
+
   /* ============ GROUP view ============ */
   .group-slot {
     padding: 8px 14px;
@@ -1226,6 +1356,7 @@ let state = {
   day: todayFestivalDay() || load('hf_day', 'thu18'),
   lineupMode: load('hf_lineupMode', 'byStage'),
   lineupFilter: load('hf_lineupFilter', 'all'),
+  planningMode: load('hf_planningMode', 'list'),
 };
 
 // Returns festival day id if today matches a festival date, else null.
@@ -1249,6 +1380,7 @@ function save() {
   localStorage.setItem('hf_day', JSON.stringify(state.day));
   localStorage.setItem('hf_lineupMode', JSON.stringify(state.lineupMode));
   localStorage.setItem('hf_lineupFilter', JSON.stringify(state.lineupFilter));
+  localStorage.setItem('hf_planningMode', JSON.stringify(state.planningMode));
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1493,6 +1625,19 @@ function renderPlanning() {
   const root = $('#content');
   root.innerHTML = '';
   const day = state.day;
+
+  // Mode toggle (LISTE / GRILLE)
+  const toggle = el('div', { class: 'planning-mode-toggle' });
+  const mkBtn = (mode, label) => el('button', {
+    class: 'lm-tab' + (state.planningMode === mode ? ' active' : ''),
+    onClick: () => { state.planningMode = mode; save(); render(); }
+  }, label);
+  toggle.appendChild(mkBtn('list', 'LISTE'));
+  toggle.appendChild(mkBtn('grid', 'GRILLE'));
+  root.appendChild(toggle);
+
+  if (state.planningMode === 'grid') { renderPlanningGrid(root); return; }
+
   const conflicts = conflictsFor(state.selected);
   const mine = CONCERTS.filter(c => c.d === day && state.selected.has(c.id))
     .sort((a,b) => toMin(a.s) - toMin(b.s));
@@ -1548,6 +1693,109 @@ function renderPlanning() {
     root.appendChild(slotEl);
   }
   if (showNow && !nowInserted) root.appendChild(nowLineEl(nowInfo.hm));
+}
+
+// Grid view of Mon Planning: PDF-style timetable (6 main stages × time rows).
+// All concerts on main stages shown; selected = stage color, others = greyed.
+// Clickable to toggle. Conflicts on selected get a warn outline.
+function renderPlanningGrid(root) {
+  const day = state.day;
+  const MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
+  const mainStages = MAIN_IDS.map(id => stageById[id]).filter(Boolean);
+  const concerts = CONCERTS.filter(c => c.d === day && MAIN_IDS.includes(c.st));
+  if (concerts.length === 0) {
+    root.appendChild(el('div', { class: 'planning-empty' },
+      el('div', { class: 'big' }, 'PAS DE GRILLE.'),
+      el('div', {}, 'Aucun concert sur les scènes principales ce jour. Repasse en LISTE.')
+    ));
+    return;
+  }
+
+  const conflicts = conflictsFor(state.selected);
+  // Time range: round start down to :30, end up to :30
+  const starts = concerts.map(c => toMin(c.s));
+  const ends = concerts.map(c => toMin(c.e));
+  let rangeStart = Math.floor(Math.min(...starts) / 30) * 30;
+  let rangeEnd = Math.ceil(Math.max(...ends) / 30) * 30;
+  const PX_PER_MIN = 1.33; // matches CSS --px-per-min
+  const totalMin = rangeEnd - rangeStart;
+  const bodyHeight = totalMin * PX_PER_MIN;
+
+  const wrap = el('div', { class: 'grid-wrap', style: { '--stage-count': mainStages.length } });
+  // Header
+  const head = el('div', { class: 'grid-head' });
+  head.appendChild(el('div', { class: 'gh' }, ''));
+  for (const s of mainStages) {
+    const cell = el('div', { class: 'gh' });
+    cell.appendChild(el('span', { class: 'stripe', style: { background: s.color } }));
+    cell.appendChild(document.createTextNode(s.label));
+    head.appendChild(cell);
+  }
+  wrap.appendChild(head);
+
+  // Body
+  const body = el('div', { class: 'grid-body', style: { height: bodyHeight + 'px' } });
+
+  // Time gutter
+  const tcol = el('div', { class: 'grid-times' });
+  for (let m = rangeStart; m <= rangeEnd; m += 30) {
+    const hh = String(Math.floor((m % (24*60)) / 60)).padStart(2,'0');
+    const mm = String(m % 60).padStart(2,'0');
+    const top = (m - rangeStart) * PX_PER_MIN;
+    tcol.appendChild(el('div', { class: 'gt', style: { top: top + 'px' } }, `${hh}:${mm}`));
+  }
+  body.appendChild(tcol);
+
+  // One column per main stage, blocks positioned absolutely
+  for (const stage of mainStages) {
+    const col = el('div', { class: 'grid-col' });
+    // Half-hour grid lines
+    for (let m = rangeStart + 30; m < rangeEnd; m += 30) {
+      const top = (m - rangeStart) * PX_PER_MIN;
+      const isHour = (m % 60) === 0;
+      col.appendChild(el('div', { class: 'row-line' + (isHour ? ' hour' : ''), style: { top: top + 'px' } }));
+    }
+    const stageConcerts = concerts.filter(c => c.st === stage.id);
+    for (const c of stageConcerts) {
+      const top = (toMin(c.s) - rangeStart) * PX_PER_MIN;
+      const height = (toMin(c.e) - toMin(c.s)) * PX_PER_MIN;
+      const selected = state.selected.has(c.id);
+      const hasConflict = selected && conflicts.has(c.id);
+      const blockStyle = { top: top + 'px', height: (height - 2) + 'px' };
+      if (selected) {
+        blockStyle.background = stage.color;
+        blockStyle.borderColor = stage.color;
+      }
+      const block = el('div', {
+        class: 'grid-block' + (selected ? ' selected' : '') + (hasConflict ? ' conflict' : ''),
+        style: blockStyle,
+        title: `${c.n} · ${c.s} → ${c.e}`,
+        onClick: () => {
+          if (state.selected.has(c.id)) state.selected.delete(c.id);
+          else state.selected.add(c.id);
+          save(); render();
+        }
+      });
+      block.appendChild(el('div', { class: 'gb-name' }, c.n));
+      if (height >= 36) {
+        block.appendChild(el('div', { class: 'gb-time' }, `${c.s} > ${c.e}`));
+      }
+      col.appendChild(block);
+    }
+    body.appendChild(col);
+  }
+
+  // NOW line if today
+  const nowInfo = getNow();
+  if (nowInfo && nowInfo.dayId === day && nowInfo.min >= rangeStart && nowInfo.min <= rangeEnd) {
+    const top = (nowInfo.min - rangeStart) * PX_PER_MIN;
+    const nl = el('div', { class: 'grid-nowline', style: { top: top + 'px' } });
+    nl.appendChild(el('span', { class: 'nt' }, nowInfo.hm));
+    body.appendChild(nl);
+  }
+
+  wrap.appendChild(body);
+  root.appendChild(wrap);
 }
 
 function renderGroup() {
