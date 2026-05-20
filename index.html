@@ -712,46 +712,84 @@
     .stats { font-size: 10px; }
   }
 
-  /* ============ PRINT (Mon Planning grid) ============ */
+  /* ============ PRINT (Mon Planning grid) ============
+     Print uses a dedicated #print-area rebuilt on demand so it can
+     compute its own scale (1 page), drop unused stages, and tighten
+     the time range to the selected concerts. */
+  #print-area { display: none; }
   @media print {
     @page { size: A4 landscape; margin: 8mm; }
     html, body {
       background: #fff !important;
       color: #000 !important;
+      margin: 0 !important;
+      padding: 0 !important;
     }
-    body { padding-bottom: 0 !important; }
     body::before { display: none !important; }
-    .stickytop, .actionbar, .planning-mode-toggle, .lineup-mode-toggle,
-    .viewbar, .modal-back, .toast { display: none !important; }
-    .content { padding: 0 !important; }
-    .print-only { display: block !important; }
-    .grid-print-header { color: #000; }
-    .grid-print-header .pmeta { color: #333; opacity: 1; }
+    #app, .toast { display: none !important; }
+    #print-area { display: block !important; }
 
-    .grid-wrap {
-      overflow: visible !important;
-      --stage-col: 130px;
-      --time-col: 50px;
+    .pg-wrap { color: #000; }
+    .pg-print-header {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 0 0 6px; margin-bottom: 6px;
+      border-bottom: 1px solid #000;
     }
-    .grid-head { background: #fff !important; border-bottom-color: #000 !important; }
-    .grid-head .gh { color: #000 !important; border-left-color: #888 !important; }
-    .grid-col { border-left-color: #888 !important; }
-    .grid-col .row-line { border-top-color: #ddd !important; }
-    .grid-col .row-line.hour { border-top-color: #888 !important; }
-    .grid-times { border-right-color: #888 !important; }
-    .grid-times .gt { color: #000 !important; }
-
-    /* Print own planning only: hide unselected blocks */
-    .grid-block:not(.selected) { display: none !important; }
-    .grid-block.selected {
-      color: #fff !important;
-      border-color: #000 !important;
-      box-shadow: none !important;
+    .pgh-title {
+      font-family: 'Anton', 'Impact', sans-serif;
+      font-size: 20px; letter-spacing: 0.05em;
+    }
+    .pgh-meta {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px; letter-spacing: 0.06em; color: #333;
+    }
+    .pg-head { display: grid; border-bottom: 1px solid #000; }
+    .pg-head .pgh {
+      padding: 4px 4px 6px;
+      text-align: center;
+      font-family: 'Anton', 'Impact', sans-serif;
+      font-size: 11px; letter-spacing: 0.06em;
+      border-left: 1px solid #aaa;
+    }
+    .pg-head .pgh:first-child { border-left: none; }
+    .pg-head .pgh .stripe {
+      display: block; height: 3px; width: 70%; margin: 0 auto 3px;
+    }
+    .pg-body { display: grid; position: relative; }
+    .pg-times { position: relative; border-right: 1px solid #000; }
+    .pg-times .pgt {
+      position: absolute; left: 0; right: 4px;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8.5px; color: #333;
+      transform: translateY(-50%);
+    }
+    .pg-col { position: relative; border-left: 1px solid #aaa; }
+    .pg-col .pg-line {
+      position: absolute; left: 0; right: 0;
+      border-top: 1px dashed #ddd;
+    }
+    .pg-col .pg-line.hour { border-top-color: #999; }
+    .pg-block {
+      position: absolute; left: 2px; right: 2px;
+      padding: 2px 4px;
+      border: 1px solid #000;
+      color: #fff;
+      text-align: center;
+      overflow: hidden;
       page-break-inside: avoid;
+      display: flex; flex-direction: column; justify-content: center;
     }
-    .grid-block.selected .gb-name,
-    .grid-block.selected .gb-time { color: #fff !important; }
-    .grid-nowline { display: none !important; }
+    .pg-block.conflict { outline: 2px solid #f5b400; outline-offset: -2px; }
+    .pgb-name {
+      font-family: 'Anton', 'Impact', sans-serif;
+      font-size: 11px; letter-spacing: 0.04em; line-height: 1.05;
+      word-break: break-word;
+    }
+    .pgb-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 8px; margin-top: 2px; opacity: 0.95;
+    }
   }
 </style>
 
@@ -779,6 +817,7 @@
   </footer>
 </div>
 <div id="modal-root"></div>
+<div id="print-area"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 
@@ -1719,7 +1758,7 @@ function renderPlanning() {
     toggle.appendChild(el('button', {
       class: 'planning-print-btn',
       title: 'Imprimer mon planning',
-      onClick: () => window.print()
+      onClick: () => printMyPlanning()
     }, '⎙ IMPRIMER'));
   }
   root.appendChild(toggle);
@@ -1810,17 +1849,6 @@ function renderPlanningGrid(root) {
   const bodyHeight = totalMin * PX_PER_MIN;
 
   const wrap = el('div', { class: 'grid-wrap', style: { '--stage-count': mainStages.length } });
-
-  // Print-only header (day + user name), hidden on screen
-  const dayLabel = dayById[day]?.label || day;
-  const selectedCount = CONCERTS.filter(c => c.d === day && MAIN_IDS.includes(c.st) && state.selected.has(c.id)).length;
-  const printHeader = el('div', { class: 'print-only grid-print-header' });
-  printHeader.appendChild(document.createTextNode(`HELLFEST '26 · ${dayLabel}`));
-  printHeader.appendChild(el('div', { class: 'pmeta' },
-    `${state.user.name} · ${selectedCount} concert${selectedCount>1?'s':''}`
-  ));
-  wrap.appendChild(printHeader);
-
   // Header
   const head = el('div', { class: 'grid-head' });
   head.appendChild(el('div', { class: 'gh' }, ''));
@@ -1896,6 +1924,123 @@ function renderPlanningGrid(root) {
   wrap.appendChild(body);
   root.appendChild(wrap);
 }
+
+// Build a print-only grid for the current day's selected concerts.
+// Scaled to fit a single A4 landscape page, dropping stages with nothing
+// selected and tightening the time range to the actual selection.
+function buildPrintGrid() {
+  const day = state.day;
+  const MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
+  const selected = CONCERTS.filter(c =>
+    c.d === day && MAIN_IDS.includes(c.st) && state.selected.has(c.id)
+  );
+  if (selected.length === 0) {
+    toast('Aucun concert sélectionné sur les scènes principales');
+    return false;
+  }
+  const activeStages = MAIN_IDS
+    .filter(id => selected.some(c => c.st === id))
+    .map(id => stageById[id])
+    .filter(Boolean);
+
+  const starts = selected.map(c => toMin(c.s));
+  const ends = selected.map(c => toMin(c.e));
+  const rangeStart = Math.floor(Math.min(...starts) / 30) * 30;
+  const rangeEnd = Math.ceil(Math.max(...ends) / 30) * 30;
+  const totalMin = rangeEnd - rangeStart;
+
+  // A4 landscape printable ~ 194mm ≈ 733px @ 96dpi. Reserve room for header + stage row.
+  const USABLE_PX = 660;
+  let pxPerMin = USABLE_PX / totalMin;
+  pxPerMin = Math.min(1.4, Math.max(0.55, pxPerMin));
+  const bodyHeight = totalMin * pxPerMin;
+
+  const dayLabel = dayById[day]?.label || day;
+  const conflicts = conflictsFor(state.selected);
+
+  const area = $('#print-area');
+  area.innerHTML = '';
+  const wrap = el('div', { class: 'pg-wrap' });
+
+  const printHeader = el('div', { class: 'pg-print-header' });
+  printHeader.appendChild(el('div', { class: 'pgh-title' }, `HELLFEST '26 · ${dayLabel}`));
+  printHeader.appendChild(el('div', { class: 'pgh-meta' },
+    `${state.user.name} · ${selected.length} concert${selected.length>1?'s':''}`
+  ));
+  wrap.appendChild(printHeader);
+
+  const gridCols = `48px repeat(${activeStages.length}, 1fr)`;
+
+  const stageHead = el('div', { class: 'pg-head', style: { gridTemplateColumns: gridCols } });
+  stageHead.appendChild(el('div', { class: 'pgh' }, ''));
+  for (const s of activeStages) {
+    const cell = el('div', { class: 'pgh' });
+    cell.appendChild(el('span', { class: 'stripe', style: { background: s.color } }));
+    cell.appendChild(document.createTextNode(s.label));
+    stageHead.appendChild(cell);
+  }
+  wrap.appendChild(stageHead);
+
+  const body = el('div', {
+    class: 'pg-body',
+    style: { gridTemplateColumns: gridCols, height: bodyHeight + 'px' }
+  });
+
+  const tcol = el('div', { class: 'pg-times' });
+  for (let m = rangeStart; m <= rangeEnd; m += 30) {
+    const hh = String(Math.floor((m % (24*60)) / 60)).padStart(2,'0');
+    const mm = String(m % 60).padStart(2,'0');
+    const top = (m - rangeStart) * pxPerMin;
+    tcol.appendChild(el('div', { class: 'pgt', style: { top: top + 'px' } }, `${hh}:${mm}`));
+  }
+  body.appendChild(tcol);
+
+  for (const stage of activeStages) {
+    const col = el('div', { class: 'pg-col' });
+    for (let m = rangeStart + 30; m < rangeEnd; m += 30) {
+      const top = (m - rangeStart) * pxPerMin;
+      const isHour = (m % 60) === 0;
+      col.appendChild(el('div', {
+        class: 'pg-line' + (isHour ? ' hour' : ''),
+        style: { top: top + 'px' }
+      }));
+    }
+    for (const c of selected.filter(x => x.st === stage.id)) {
+      const top = (toMin(c.s) - rangeStart) * pxPerMin;
+      const height = (toMin(c.e) - toMin(c.s)) * pxPerMin;
+      const block = el('div', {
+        class: 'pg-block' + (conflicts.has(c.id) ? ' conflict' : ''),
+        style: {
+          top: top + 'px',
+          height: Math.max(height - 2, 16) + 'px',
+          background: stage.color,
+          borderColor: stage.color
+        }
+      });
+      block.appendChild(el('div', { class: 'pgb-name' }, c.n));
+      if (height >= 24) {
+        block.appendChild(el('div', { class: 'pgb-time' }, `${c.s} > ${c.e}`));
+      }
+      col.appendChild(block);
+    }
+    body.appendChild(col);
+  }
+
+  wrap.appendChild(body);
+  area.appendChild(wrap);
+  return true;
+}
+
+function printMyPlanning() {
+  if (!buildPrintGrid()) return;
+  // Give the browser a tick to lay out before opening the print dialog
+  setTimeout(() => window.print(), 50);
+}
+
+window.addEventListener('afterprint', () => {
+  const area = document.getElementById('print-area');
+  if (area) area.innerHTML = '';
+});
 
 function renderGroup() {
   const root = $('#content');
