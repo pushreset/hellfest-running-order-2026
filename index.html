@@ -267,6 +267,76 @@
     margin-bottom: 12px; letter-spacing: 0.06em;
   }
 
+  /* Rating button on a planning row (opens modal) */
+  .rate-btn {
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border: 1px solid var(--line-2);
+    background: transparent;
+    color: var(--fg-mute);
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; line-height: 1;
+  }
+  .rate-btn.rated {
+    color: #f5b400;
+    border-color: #f5b400;
+    letter-spacing: 0.02em;
+  }
+  .rate-btn:hover { color: var(--fg); border-color: var(--fg-mute); }
+  .rate-btn.rated:hover { color: #f5b400; border-color: #f5b400; }
+
+  /* Rating modal: interactive stars + actions */
+  .rate-modal-stars {
+    display: flex; gap: 4px; margin-bottom: 8px;
+  }
+  .rate-modal-stars .star {
+    background: none; border: 0; padding: 4px;
+    font-size: 28px; line-height: 1; cursor: pointer;
+    color: var(--line-2);
+  }
+  .rate-modal-stars .star.on { color: #f5b400; }
+  .rate-modal-stars .star:hover { color: #f5b400; }
+  .rate-modal-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    margin-top: 16px;
+  }
+  .btn.ghost { background: transparent; }
+
+  /* Festival recap block at top of planning list */
+  .recap {
+    margin: 8px 14px 14px;
+    padding: 12px 14px;
+    border: 1px solid var(--line-2);
+    background: var(--bg-3);
+  }
+  .recap-title {
+    font-family: var(--display); font-size: 11px; letter-spacing: 0.16em;
+    color: var(--fg-mute); margin-bottom: 8px;
+  }
+  .recap-stats {
+    display: flex; gap: 18px; font-size: 11px;
+    color: var(--fg-mute); text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .recap-stats .recap-num {
+    font-family: var(--display); font-size: 20px;
+    color: var(--fg); margin-right: 4px;
+    letter-spacing: 0.04em;
+  }
+  .recap-top {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .recap-row { display: flex; gap: 10px; align-items: center; }
+  .recap-stars {
+    color: #f5b400; font-size: 12px; letter-spacing: 1px;
+    flex-shrink: 0; font-family: monospace;
+  }
+  .recap-name {
+    font-family: var(--display); font-size: 12px;
+    color: var(--fg); letter-spacing: 0.04em;
+  }
+
   /* ============ PLANNING grid view (PDF-style) ============ */
   .planning-mode-toggle {
     display: flex; gap: 0;
@@ -1613,7 +1683,14 @@ let state = {
   lineupMode: load('hf_lineupMode', 'byStage'),
   lineupFilter: load('hf_lineupFilter', 'all'),
   planningMode: load('hf_planningMode', 'list'),
+  ratings: load('hf_ratings', {}), // { [concertId]: { stars: 1..5, note: string } }
 };
+
+// Migrate legacy number-only ratings to the {stars, note} shape.
+for (const id in state.ratings) {
+  const v = state.ratings[id];
+  if (typeof v === 'number') state.ratings[id] = { stars: v, note: '' };
+}
 
 // Ensure user has a stable unique id (generated on first launch, migrates legacy users)
 if (!state.user.uid) {
@@ -1643,6 +1720,32 @@ function save() {
   localStorage.setItem('hf_lineupMode', JSON.stringify(state.lineupMode));
   localStorage.setItem('hf_lineupFilter', JSON.stringify(state.lineupFilter));
   localStorage.setItem('hf_planningMode', JSON.stringify(state.planningMode));
+  localStorage.setItem('hf_ratings', JSON.stringify(state.ratings));
+}
+
+// True once the concert's end time has passed.
+// Honors the ?now=dayId@HH:MM URL override (same as getNow) for testing.
+function isConcertOver(c) {
+  const day = dayById[c.d];
+  if (!day) return false;
+  const params = new URL(location.href).searchParams;
+  const override = params.get('now');
+  if (override && override.includes('@')) {
+    const [overDay, hm] = override.split('@');
+    if (dayById[overDay] && /^\d{1,2}:\d{2}$/.test(hm)) {
+      const order = DAYS.map(d => d.id);
+      const oi = order.indexOf(overDay);
+      const ci = order.indexOf(c.d);
+      if (ci < oi) return true;
+      if (ci > oi) return false;
+      return toMin(hm) >= toMin(c.e);
+    }
+  }
+  const [eh, em] = c.e.split(':').map(Number);
+  const [yy, mm, dd] = day.date.split('-').map(Number);
+  const end = new Date(yy, mm - 1, dd, eh, em);
+  if (eh < 6) end.setDate(end.getDate() + 1); // after-midnight slot rolls to next day
+  return Date.now() >= end.getTime();
 }
 function toast(msg) {
   const t = el('div', { class: 'toast' }, msg);
@@ -1912,6 +2015,8 @@ function renderPlanning() {
   if (state.planningMode === 'timeline') { renderPlanningTimeline(root); return; }
 
   const conflicts = conflictsFor(state.selected);
+  const recap = festivalRecap();
+  if (recap) root.appendChild(recap);
   const mine = CONCERTS.filter(c => c.d === day && state.selected.has(c.id))
     .sort((a,b) => toMin(a.s) - toMin(b.s));
   if (mine.length === 0) {
@@ -1959,6 +2064,7 @@ function renderPlanning() {
       }
       row.appendChild(info);
       if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+      if (isConcertOver(concert)) row.appendChild(ratingButton(concert));
       const ib = infoButton(concert);
       if (ib) row.appendChild(ib);
       slotEl.appendChild(row);
@@ -2426,6 +2532,130 @@ function infoButton(c) {
     title: 'Infos groupe',
     onClick: (e) => { e.stopPropagation(); showInfo(c, info); }
   }, 'i');
+}
+
+// Compact button shown on a planning row. Opens the rating modal on click.
+function ratingButton(c) {
+  const r = state.ratings[c.id];
+  const stars = r?.stars || 0;
+  const label = stars
+    ? '★'.repeat(stars) + (r.note ? ' ✎' : '')
+    : 'NOTER';
+  return el('button', {
+    class: 'rate-btn' + (stars ? ' rated' : ''),
+    title: stars ? `${stars}/5${r.note ? ' · note' : ''}` : 'Noter ce concert',
+    onClick: (e) => { e.stopPropagation(); openRatingModal(c); }
+  }, label);
+}
+
+// Modal: pick 1-5 stars + optional note. Save persists; "Effacer" clears the rating.
+function openRatingModal(c) {
+  const current = state.ratings[c.id] || { stars: 0, note: '' };
+  let stars = current.stars;
+  const body = [];
+
+  const stage = stageById[c.st];
+  body.push(el('div', { class: 'info-genre' },
+    [stage?.label, `${c.s} → ${c.e}`].filter(Boolean).join(' · ')
+  ));
+
+  const starsRow = el('div', { class: 'rate-modal-stars' });
+  const repaint = () => {
+    [...starsRow.children].forEach((b, idx) => {
+      b.classList.toggle('on', (idx + 1) <= stars);
+    });
+  };
+  for (let i = 1; i <= 5; i++) {
+    starsRow.appendChild(el('button', {
+      class: 'star',
+      type: 'button',
+      onClick: () => { stars = (stars === i ? 0 : i); repaint(); }
+    }, '★'));
+  }
+  repaint();
+  body.push(el('label', {}, 'Note'));
+  body.push(starsRow);
+
+  body.push(el('label', {}, 'Commentaire'));
+  const noteEl = el('textarea', {
+    placeholder: 'Setlist, ambiance, son…',
+    maxlength: 500
+  });
+  noteEl.value = current.note || '';
+  body.push(noteEl);
+
+  const actions = el('div', { class: 'rate-modal-actions' });
+  if (current.stars || current.note) {
+    actions.appendChild(el('button', {
+      class: 'btn ghost',
+      onClick: () => {
+        delete state.ratings[c.id];
+        save(); closeModal(); render();
+      }
+    }, 'Effacer'));
+  }
+  actions.appendChild(el('button', {
+    class: 'btn primary',
+    onClick: () => {
+      const note = noteEl.value.trim();
+      if (!stars && !note) {
+        delete state.ratings[c.id];
+      } else {
+        state.ratings[c.id] = { stars, note };
+      }
+      save(); closeModal(); render();
+    }
+  }, 'Enregistrer'));
+  body.push(actions);
+
+  showModal(c.n, body);
+}
+
+// Festival recap block: count, avg rating, note count, top concerts. Returns null if empty.
+function festivalRecap() {
+  const entries = Object.entries(state.ratings)
+    .filter(([id, r]) => concertById[id] && (r.stars || r.note));
+  if (!entries.length) return null;
+  const starred = entries.filter(([, r]) => r.stars);
+  const notes = entries.filter(([, r]) => r.note).length;
+  const avg = starred.length
+    ? starred.reduce((a, [, r]) => a + r.stars, 0) / starred.length
+    : 0;
+  const top = starred
+    .map(([id, r]) => ({ c: concertById[id], r }))
+    .sort((a, b) => b.r.stars - a.r.stars || a.c.n.localeCompare(b.c.n))
+    .slice(0, 3);
+  const box = el('div', { class: 'recap' });
+  box.appendChild(el('div', { class: 'recap-title' }, 'BILAN FESTIVAL'));
+  const stats = el('div', { class: 'recap-stats' });
+  stats.appendChild(el('span', {},
+    el('span', { class: 'recap-num' }, String(starred.length)),
+    ' noté' + (starred.length > 1 ? 's' : '')
+  ));
+  if (starred.length) {
+    stats.appendChild(el('span', {},
+      el('span', { class: 'recap-num' }, avg.toFixed(1)),
+      '/5 moy.'
+    ));
+  }
+  if (notes) {
+    stats.appendChild(el('span', {},
+      el('span', { class: 'recap-num' }, String(notes)),
+      ' commentaire' + (notes > 1 ? 's' : '')
+    ));
+  }
+  box.appendChild(stats);
+  if (top.length) {
+    const list = el('div', { class: 'recap-top' });
+    for (const { c, r } of top) {
+      const row = el('div', { class: 'recap-row' });
+      row.appendChild(el('span', { class: 'recap-stars' }, '★'.repeat(r.stars) + '☆'.repeat(5 - r.stars)));
+      row.appendChild(el('span', { class: 'recap-name' }, c.n));
+      list.appendChild(row);
+    }
+    box.appendChild(list);
+  }
+  return box;
 }
 
 function showInfo(c, info) {
