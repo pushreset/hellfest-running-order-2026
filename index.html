@@ -2103,6 +2103,7 @@ function renderPlanning() {
 // Grid view of Mon Planning: PDF-style timetable (6 main stages × time rows).
 // All concerts on main stages shown; selected = stage color, others = greyed.
 // Clickable to toggle. Conflicts on selected get a warn outline.
+let _gridPendingScroll = null;
 function renderPlanningGrid(root) {
   const day = state.day;
   const MAIN_IDS = ['ms1','ms2','wz','vl','tp','al'];
@@ -2176,6 +2177,7 @@ function renderPlanningGrid(root) {
         style: blockStyle,
         title: `${c.n} · ${c.s} → ${c.e}`,
         onClick: () => {
+          _gridPendingScroll = { left: wrap.scrollLeft, top: wrap.scrollTop };
           if (state.selected.has(c.id)) state.selected.delete(c.id);
           else state.selected.add(c.id);
           save(); render();
@@ -2201,6 +2203,16 @@ function renderPlanningGrid(root) {
 
   wrap.appendChild(body);
   root.appendChild(wrap);
+
+  // Preserve scroll position when the grid is rebuilt after toggling a concert.
+  if (_gridPendingScroll != null) {
+    const pending = _gridPendingScroll;
+    _gridPendingScroll = null;
+    requestAnimationFrame(() => {
+      wrap.scrollLeft = pending.left;
+      wrap.scrollTop = pending.top;
+    });
+  }
 }
 
 // Horizontal gantt: rows = stages, X-axis = time, scroll horizontal.
