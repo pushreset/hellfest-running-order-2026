@@ -2205,6 +2205,7 @@ function renderPlanningGrid(root) {
 
 // Horizontal gantt: rows = stages, X-axis = time, scroll horizontal.
 // Shows all stages with concerts that day (main + hellcity). Click toggles selection.
+let _tlPendingScroll = null;
 function renderPlanningTimeline(root) {
   const day = state.day;
   const concerts = CONCERTS.filter(c => c.d === day);
@@ -2280,6 +2281,7 @@ function renderPlanningTimeline(root) {
         style: blockStyle,
         title: `${c.n} · ${c.s} → ${c.e}`,
         onClick: () => {
+          _tlPendingScroll = wrap.scrollLeft;
           if (state.selected.has(c.id)) state.selected.delete(c.id);
           else state.selected.add(c.id);
           save(); render();
@@ -2308,8 +2310,14 @@ function renderPlanningTimeline(root) {
   wrap.appendChild(inner);
   root.appendChild(wrap);
 
-  // Auto-scroll to NOW if today, else to start of selected concerts, else to range start
+  // Auto-scroll to NOW if today, else to start of selected concerts, else to range start.
+  // If the user just toggled a concert from the timeline, preserve their scroll position instead.
   requestAnimationFrame(() => {
+    if (_tlPendingScroll != null) {
+      wrap.scrollLeft = _tlPendingScroll;
+      _tlPendingScroll = null;
+      return;
+    }
     if (nowInfo && nowInfo.dayId === day && nowInfo.min >= rangeStart && nowInfo.min <= rangeEnd) {
       const labelColPx = window.matchMedia('(max-width: 420px)').matches ? 86 : 110;
       const targetX = labelColPx + (nowInfo.min - rangeStart) * PX_PER_MIN;
