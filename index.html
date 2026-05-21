@@ -2720,8 +2720,18 @@ function showInfo(c, info) {
   showModal(c.n, body);
 }
 
-function openIdentity() {
-  const nameInput = el('input', { type: 'text', value: state.user.name, maxlength: 12 });
+function isDefaultName(name) {
+  return !name || !name.trim() || name.trim().toUpperCase() === 'MOI';
+}
+
+function openIdentity(opts = {}) {
+  const { requireRealName = false, intro, onSaved } = opts;
+  // Start with an empty field when the user is still on the default 'MOI',
+  // so they pick a real pseudo instead of editing the placeholder.
+  const initial = isDefaultName(state.user.name) ? '' : state.user.name;
+  const nameInput = el('input', {
+    type: 'text', value: initial, maxlength: 12, placeholder: 'Ton prénom'
+  });
   const picker = el('div', { class: 'color-picker' });
   let chosenColor = state.user.color;
   for (const c of COLORS) {
@@ -2737,7 +2747,7 @@ function openIdentity() {
     picker.appendChild(sw);
   }
   showModal('IDENTITÉ', [
-    el('p', {}, 'Ton pseudo et ta couleur. Visibles par tes amis quand tu partages ton planning.'),
+    el('p', {}, intro || 'Ton pseudo et ta couleur. Visibles par tes amis quand tu partages ton planning.'),
     el('label', {}, 'Pseudo'),
     nameInput,
     el('label', {}, 'Couleur'),
@@ -2746,12 +2756,19 @@ function openIdentity() {
       el('button', {
         class: 'btn primary',
         onClick: () => {
-          state.user.name = nameInput.value.trim() || 'MOI';
+          const raw = nameInput.value.trim();
+          if (requireRealName && isDefaultName(raw)) {
+            toast('Choisis un prénom pour que tes potes te reconnaissent');
+            nameInput.focus();
+            return;
+          }
+          state.user.name = raw || 'MOI';
           state.user.color = chosenColor;
           save();
           closeModal();
           render();
           toast('Identité enregistrée');
+          if (onSaved) onSaved();
         }
       }, 'OK')
     )
@@ -2782,6 +2799,15 @@ function buildPayload() {
 }
 
 function openQR() {
+  // Force a real pseudo before sharing — "MOI" is confusing on the import side.
+  if (isDefaultName(state.user.name)) {
+    openIdentity({
+      requireRealName: true,
+      intro: 'Choisis un prénom avant de partager ton planning. Tes potes verront ce pseudo dans leur appli.',
+      onSaved: openQR
+    });
+    return;
+  }
   const payload = buildPayload();
   const payloadStr = JSON.stringify(payload);
   const shareUrl = SHARE_BASE + '?d=' + b64urlEncode(payloadStr);
@@ -2944,13 +2970,13 @@ function openFriends() {
 }
 
 // ---------- Wire up ----------
-$('#identity-btn').onclick = openIdentity;
+$('#identity-btn').onclick = () => openIdentity();
 $('#btn-qr').onclick = openQR;
 $('#btn-friends').onclick = openFriends;
 
 // First-launch identity
 if (!localStorage.getItem('hf_user')) {
-  setTimeout(openIdentity, 300);
+  setTimeout(() => openIdentity(), 300);
 }
 
 // URL import: open page with ?d=<base64-json> to auto-import
