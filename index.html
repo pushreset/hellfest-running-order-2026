@@ -3263,7 +3263,7 @@ function openMap() {
     scale = 1; tx = (vw() - baseW) / 2; ty = (vh() - baseH) / 2;
     apply();
   }
-  if (img.complete) fit(); else img.onload = fit;
+  img.onload = fit;
 
   // Gestures (Pointer Events: one path for touch + mouse)
   const pts = new Map();
@@ -3331,6 +3331,7 @@ function openMap() {
   setTimeout(() => hint.classList.add('gone'), 2600);
 
   document.body.appendChild(overlay);
+  if (img.complete) fit();  // overlay now in DOM, so clientWidth/Height are valid
 }
 
 // ---------- Wire up ----------
