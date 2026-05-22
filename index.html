@@ -663,6 +663,16 @@
     flex-shrink: 0;
   }
   .group-slot .slot-row .info-btn:hover { color: var(--fg); border-color: var(--fg-mute); }
+  .group-slot .slot-row .add-btn {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 1px solid var(--line-2);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-size: 18px; line-height: 1;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .group-slot .slot-row .add-btn:hover { border-color: var(--green); }
 
   /* ============ Lineup mode toggle ============ */
   .lineup-mode-toggle {
@@ -1729,7 +1739,7 @@ const STRINGS = {
     empty_grid_big: 'PAS DE GRILLE.', empty_grid_msg: 'Aucun concert sur les scènes principales ce jour. Repasse en LISTE.',
     empty_tl_big: 'PAS DE CONCERTS.', empty_tl_msg: 'Choisis un autre jour.',
     empty_group_big: 'VIDE.', empty_group_msg: 'Personne (toi inclus) n\'a sélectionné de concert pour ce jour.',
-    conflict_tag: 'CONFLIT', info_group: 'Infos groupe',
+    conflict_tag: 'CONFLIT', info_group: 'Infos groupe', add_to_mine: 'Ajouter à mon planning',
     print_none: 'Aucun concert sélectionné sur les scènes principales',
     rate: 'NOTER', rate_title: 'Noter ce concert', rate_note_suffix: ' · note',
     label_note: 'Note', label_comment: 'Commentaire',
@@ -1786,7 +1796,7 @@ const STRINGS = {
     empty_grid_big: 'NO GRID.', empty_grid_msg: 'No concerts on the main stages this day. Switch back to LIST.',
     empty_tl_big: 'NO CONCERTS.', empty_tl_msg: 'Pick another day.',
     empty_group_big: 'EMPTY.', empty_group_msg: 'Nobody (you included) picked a concert for this day.',
-    conflict_tag: 'CONFLICT', info_group: 'Band info',
+    conflict_tag: 'CONFLICT', info_group: 'Band info', add_to_mine: 'Add to my planning',
     print_none: 'No concert selected on the main stages',
     rate: 'RATE', rate_title: 'Rate this concert', rate_note_suffix: ' · note',
     label_note: 'Rating', label_comment: 'Comment',
@@ -2744,6 +2754,17 @@ function renderGroup() {
       row.appendChild(info);
       const ib = infoButton(concert);
       if (ib) row.appendChild(ib);
+      if (!state.selected.has(concert.id)) {
+        row.appendChild(el('button', {
+          class: 'add-btn',
+          title: t('add_to_mine'),
+          onClick: (e) => {
+            e.stopPropagation();
+            state.selected.add(concert.id);
+            save(); render();
+          }
+        }, '+'));
+      }
       slotEl.appendChild(row);
     }
     root.appendChild(slotEl);
