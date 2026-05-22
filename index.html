@@ -725,7 +725,7 @@
   /* ============ ACTION BAR ============ */
   .actionbar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-    display: grid; grid-template-columns: 1fr 1.2fr;
+    display: grid; grid-template-columns: 1fr 1fr 1.2fr;
     background: var(--bg);
     border-top: 1px solid var(--line-2);
     padding-bottom: env(safe-area-inset-bottom);
@@ -742,6 +742,49 @@
   .actionbar button .icon { font-size: 18px; line-height: 1; }
   .actionbar button.primary { background: var(--red); color: var(--bg); }
   .actionbar button.primary .icon { color: var(--bg); }
+
+  /* ============ MAP overlay (festival plan, zoom + pan) ============ */
+  .map-overlay {
+    position: fixed; inset: 0; z-index: 300;
+    width: 100vw; height: 100vh; height: 100dvh;
+    background: #000;
+    overflow: hidden;
+    touch-action: none;
+    overscroll-behavior: contain;
+  }
+  .map-stage {
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+  .map-stage img {
+    display: block; max-width: none;
+    user-select: none; -webkit-user-drag: none; pointer-events: none;
+  }
+  .map-close {
+    position: fixed; z-index: 301;
+    top: calc(12px + env(safe-area-inset-top));
+    right: calc(12px + env(safe-area-inset-right));
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--red); color: var(--bg);
+    border: 1px solid var(--red-deep);
+    font-size: 20px; line-height: 1; font-weight: 700;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  }
+  .map-hint {
+    position: fixed; z-index: 301;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: rgba(28,28,28,0.85); border: 1px solid var(--line-2);
+    color: var(--fg-mute);
+    padding: 7px 14px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    white-space: nowrap; pointer-events: none;
+    transition: opacity 0.4s; opacity: 1;
+  }
+  .map-hint.gone { opacity: 0; }
 
   /* ============ MODAL ============ */
   .modal-back {
@@ -1026,6 +1069,7 @@
   </div>
   <main class="content" id="content"></main>
   <footer class="actionbar">
+    <button id="btn-map"><span class="icon">⊞</span>PLAN</button>
     <button id="btn-friends"><span class="icon">◉</span>AMIS</button>
     <button id="btn-qr" class="primary"><span class="icon">▦</span>MON QR</button>
   </footer>
@@ -1669,7 +1713,8 @@ const concertById = Object.fromEntries(CONCERTS.map(c => [c.id, c]));
 const STRINGS = {
   fr: {
     nav_lineup: 'LINEUP', nav_planning: 'MON PLANNING', nav_group: 'GROUPE',
-    btn_friends: 'AMIS', btn_qr: 'MON QR',
+    btn_friends: 'AMIS', btn_qr: 'MON QR', btn_map: 'PLAN',
+    map_hint: 'Pince pour zoomer · glisse pour déplacer',
     count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
     count_friend_one: '{n} ami', count_friend_other: '{n} amis',
     count_conflict_one: '{n} conflit', count_conflict_other: '{n} conflits',
@@ -1725,7 +1770,8 @@ const STRINGS = {
   },
   en: {
     nav_lineup: 'LINEUP', nav_planning: 'MY PLANNING', nav_group: 'GROUP',
-    btn_friends: 'FRIENDS', btn_qr: 'MY QR',
+    btn_friends: 'FRIENDS', btn_qr: 'MY QR', btn_map: 'MAP',
+    map_hint: 'Pinch to zoom · drag to move',
     count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
     count_friend_one: '{n} friend', count_friend_other: '{n} friends',
     count_conflict_one: '{n} conflict', count_conflict_other: '{n} conflicts',
@@ -1827,6 +1873,7 @@ function applyStaticI18n() {
   $$('.view-tab').forEach(b => { b.textContent = t(map[b.dataset.view] || ''); });
   const f = $('#btn-friends'); if (f) f.lastChild.textContent = t('btn_friends');
   const q = $('#btn-qr'); if (q) q.lastChild.textContent = t('btn_qr');
+  const m = $('#btn-map'); if (m) m.lastChild.textContent = t('btn_map');
 }
 
 // ---------- State ----------
@@ -3152,10 +3199,124 @@ function openFriends() {
   showModal(t('friends_title'), body);
 }
 
+// ---------- Festival map (fullscreen, zoom + pan) ----------
+function openMap() {
+  if ($('.map-overlay')) return;
+  const MIN = 1, MAX = 6;
+  let scale = 1, tx = 0, ty = 0;   // stage transform: translate then scale, origin 0,0
+  let baseW = 0, baseH = 0;        // img size at scale 1 (fit inside viewport)
+
+  const img = el('img', { src: 'plan.jpg', alt: 'Plan Hellfest 2026' });
+  const stage = el('div', { class: 'map-stage' }, img);
+  const closeBtn = el('button', { class: 'map-close', 'aria-label': t('btn_close') }, '✕');
+  const hint = el('div', { class: 'map-hint' }, t('map_hint'));
+  const overlay = el('div', { class: 'map-overlay' }, stage, closeBtn, hint);
+
+  const vw = () => overlay.clientWidth;
+  const vh = () => overlay.clientHeight;
+
+  function clamp() {
+    scale = Math.min(MAX, Math.max(MIN, scale));
+    const w = baseW * scale, h = baseH * scale;
+    tx = w <= vw() ? (vw() - w) / 2 : Math.min(0, Math.max(vw() - w, tx));
+    ty = h <= vh() ? (vh() - h) / 2 : Math.min(0, Math.max(vh() - h, ty));
+  }
+  function apply() {
+    stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+  function zoomAt(px, py, next) {
+    next = Math.min(MAX, Math.max(MIN, next));
+    const lx = (px - tx) / scale, ly = (py - ty) / scale;
+    scale = next;
+    tx = px - lx * scale;
+    ty = py - ly * scale;
+    clamp(); apply();
+  }
+  function fit() {
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    if (!iw || !ih) return;
+    const f = Math.min(vw() / iw, vh() / ih);
+    baseW = iw * f; baseH = ih * f;
+    img.style.width = baseW + 'px';
+    img.style.height = baseH + 'px';
+    scale = 1; tx = (vw() - baseW) / 2; ty = (vh() - baseH) / 2;
+    apply();
+  }
+  if (img.complete) fit(); else img.onload = fit;
+
+  // Gestures (Pointer Events: one path for touch + mouse)
+  const pts = new Map();
+  let lastDist = 0, lastMid = null, lastTap = 0;
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const mid = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+  overlay.addEventListener('pointerdown', (e) => {
+    overlay.setPointerCapture(e.pointerId);
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      lastDist = dist(a, b); lastMid = mid(a, b);
+    }
+  });
+  overlay.addEventListener('pointermove', (e) => {
+    if (!pts.has(e.pointerId)) return;
+    const prev = pts.get(e.pointerId);
+    const cur = { x: e.clientX, y: e.clientY };
+    pts.set(e.pointerId, cur);
+    if (pts.size === 1) {
+      tx += cur.x - prev.x; ty += cur.y - prev.y;
+      clamp(); apply();
+    } else if (pts.size === 2) {
+      const [a, b] = [...pts.values()];
+      const d = dist(a, b), m = mid(a, b);
+      if (lastDist > 0) zoomAt(m.x, m.y, scale * (d / lastDist));
+      if (lastMid) { tx += m.x - lastMid.x; ty += m.y - lastMid.y; clamp(); apply(); }
+      lastDist = d; lastMid = m;
+    }
+  });
+  function endPointer(e) {
+    pts.delete(e.pointerId);
+    if (pts.size < 2) { lastDist = 0; lastMid = null; }
+  }
+  overlay.addEventListener('pointerup', (e) => {
+    endPointer(e);
+    if (pts.size === 0) {
+      const now = Date.now();
+      if (now - lastTap < 300) { zoomAt(e.clientX, e.clientY, scale > 1.01 ? 1 : 2.5); lastTap = 0; }
+      else lastTap = now;
+    }
+  });
+  overlay.addEventListener('pointercancel', endPointer);
+  overlay.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, scale * (e.deltaY < 0 ? 1.15 : 1 / 1.15));
+  }, { passive: false });
+
+  // Open/close + Android back button support
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  function close() {
+    window.removeEventListener('keydown', onKey);
+    window.removeEventListener('popstate', onPop);
+    overlay.remove();
+    document.body.style.overflow = prevOverflow;
+  }
+  function onKey(e) { if (e.key === 'Escape') history.back(); }
+  function onPop() { close(); }
+  closeBtn.onclick = () => history.back();
+  history.pushState({ map: 1 }, '');
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('popstate', onPop);
+  setTimeout(() => hint.classList.add('gone'), 2600);
+
+  document.body.appendChild(overlay);
+}
+
 // ---------- Wire up ----------
 $('#identity-btn').onclick = () => openIdentity();
 $('#btn-qr').onclick = openQR;
 $('#btn-friends').onclick = openFriends;
+$('#btn-map').onclick = openMap;
 
 // First-launch identity
 if (!localStorage.getItem('hf_user')) {
