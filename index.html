@@ -1043,11 +1043,11 @@
 // Times past midnight belong to the same "festival day" as the start (handled in code)
 
 const DAYS = [
-  { id: 'wed17', label: 'MER 17', full: 'Mercredi 17 juin', date: '2026-06-17' },
-  { id: 'thu18', label: 'JEU 18', full: 'Jeudi 18 juin', date: '2026-06-18' },
-  { id: 'fri19', label: 'VEN 19', full: 'Vendredi 19 juin', date: '2026-06-19' },
-  { id: 'sat20', label: 'SAM 20', full: 'Samedi 20 juin', date: '2026-06-20' },
-  { id: 'sun21', label: 'DIM 21', full: 'Dimanche 21 juin', date: '2026-06-21' },
+  { id: 'wed17', label: 'MER 17', full: 'Mercredi 17 juin', labelEn: 'WED 17', date: '2026-06-17' },
+  { id: 'thu18', label: 'JEU 18', full: 'Jeudi 18 juin', labelEn: 'THU 18', date: '2026-06-18' },
+  { id: 'fri19', label: 'VEN 19', full: 'Vendredi 19 juin', labelEn: 'FRI 19', date: '2026-06-19' },
+  { id: 'sat20', label: 'SAM 20', full: 'Samedi 20 juin', labelEn: 'SAT 20', date: '2026-06-20' },
+  { id: 'sun21', label: 'DIM 21', full: 'Dimanche 21 juin', labelEn: 'SUN 21', date: '2026-06-21' },
 ];
 
 const STAGES = [
@@ -1665,6 +1665,170 @@ const dayById = Object.fromEntries(DAYS.map(d => [d.id, d]));
 const stageById = Object.fromEntries(STAGES.map(s => [s.id, s]));
 const concertById = Object.fromEntries(CONCERTS.map(c => [c.id, c]));
 
+// ---------- i18n ----------
+const STRINGS = {
+  fr: {
+    nav_lineup: 'LINEUP', nav_planning: 'MON PLANNING', nav_group: 'GROUPE',
+    btn_friends: 'AMIS', btn_qr: 'MON QR',
+    count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
+    count_friend_one: '{n} ami', count_friend_other: '{n} amis',
+    count_conflict_one: '{n} conflit', count_conflict_other: '{n} conflits',
+    count_unknown_one: '{n} inconnu', count_unknown_other: '{n} inconnus',
+    count_rated_one: '{n} noté', count_rated_other: '{n} notés',
+    count_comment_one: '{n} commentaire', count_comment_other: '{n} commentaires',
+    lineup_by_stage: 'PAR SCÈNE', lineup_by_time: 'PAR HEURE',
+    filter_all: 'TOUTES', filter_main: 'PRINCIPALES',
+    planning_list: 'LISTE', planning_grid: 'GRILLE', planning_timeline: 'TIMELINE',
+    print_btn: '⎙ IMPRIMER', print_title: 'Imprimer mon planning',
+    empty_planning_big: 'RIEN.', empty_planning_msg: 'Tape "LINEUP" et choisis tes concerts.',
+    empty_grid_big: 'PAS DE GRILLE.', empty_grid_msg: 'Aucun concert sur les scènes principales ce jour. Repasse en LISTE.',
+    empty_tl_big: 'PAS DE CONCERTS.', empty_tl_msg: 'Choisis un autre jour.',
+    empty_group_big: 'VIDE.', empty_group_msg: 'Personne (toi inclus) n\'a sélectionné de concert pour ce jour.',
+    conflict_tag: 'CONFLIT', info_group: 'Infos groupe',
+    print_none: 'Aucun concert sélectionné sur les scènes principales',
+    rate: 'NOTER', rate_title: 'Noter ce concert', rate_note_suffix: ' · note',
+    label_note: 'Note', label_comment: 'Commentaire',
+    note_placeholder: 'Setlist, ambiance, son…',
+    btn_clear: 'Effacer', btn_save: 'Enregistrer',
+    recap_title: 'BILAN FESTIVAL', recap_avg: '/5 moy.',
+    spotify_listen: '♪ Écouter sur Spotify', spotify_none: 'Spotify : introuvable',
+    settings_title: 'PARAMÈTRES',
+    settings_intro: 'Ton pseudo et ta couleur. Visibles par tes amis quand tu partages ton planning.',
+    label_nick: 'Pseudo', name_placeholder: 'Ton prénom', label_color: 'Couleur',
+    label_language: 'Langue',
+    btn_ok: 'OK',
+    name_required: 'Choisis un prénom pour que tes potes te reconnaissent',
+    saved: 'Identité enregistrée',
+    qr_title: 'MON QR',
+    qr_need_name: 'Choisis un prénom avant de partager ton planning. Tes potes verront ce pseudo dans leur appli.',
+    qr_intro: 'Partage ton planning : tes potes scannent ce code avec l\'appareil photo, le site s\'ouvre et importe {c}.',
+    qr_link_label: 'Ou copie-colle ce lien (à ouvrir dans un navigateur)',
+    btn_copy_link: 'Copier le lien', btn_close: 'Fermer', copied: 'Copié',
+    import_title: 'IMPORTER',
+    import_intro: 'Planning de « {n} » — {c}{extra}.',
+    import_as: 'Importer comme',
+    import_help: 'AMI : son planning s\'ajoute à côté du tien (vue GROUPE). MA SETLIST : c\'est un transfert de TON propre planning depuis un autre appareil.',
+    import_friend_btn: 'Ami : {n}',
+    import_merge_btn: 'Ma setlist — Ajouter', import_replace_btn: 'Ma setlist — Écraser',
+    btn_cancel: 'Annuler',
+    confirm_merge: 'Ajouter {c} à TA setlist ?',
+    confirm_replace: 'Écraser ta setlist actuelle{cur} ?',
+    friend_imported: 'importé', friend_updated: 'mis à jour',
+    setlist_replaced: 'remplacée', setlist_updated: 'mise à jour',
+    toast_friend: '{n} {verb} · {c}{dropped}',
+    toast_setlist: 'Setlist {verb} · {c}{dropped}',
+    bad_format: 'Format invalide', unknown_format: 'Format inconnu',
+    friends_title: 'AMIS',
+    friends_intro: '{c}. Désactive la visibilité pour les masquer du planning groupe.',
+    friends_empty_big: 'SEUL.', friends_empty_msg: 'Ouvre le lien QR d\'un pote pour l\'ajouter.',
+    confirm_delete_friend: 'Supprimer {name} ?',
+  },
+  en: {
+    nav_lineup: 'LINEUP', nav_planning: 'MY PLANNING', nav_group: 'GROUP',
+    btn_friends: 'FRIENDS', btn_qr: 'MY QR',
+    count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
+    count_friend_one: '{n} friend', count_friend_other: '{n} friends',
+    count_conflict_one: '{n} conflict', count_conflict_other: '{n} conflicts',
+    count_unknown_one: '{n} unknown', count_unknown_other: '{n} unknown',
+    count_rated_one: '{n} rated', count_rated_other: '{n} rated',
+    count_comment_one: '{n} comment', count_comment_other: '{n} comments',
+    lineup_by_stage: 'BY STAGE', lineup_by_time: 'BY TIME',
+    filter_all: 'ALL', filter_main: 'MAIN STAGES',
+    planning_list: 'LIST', planning_grid: 'GRID', planning_timeline: 'TIMELINE',
+    print_btn: '⎙ PRINT', print_title: 'Print my planning',
+    empty_planning_big: 'NOTHING.', empty_planning_msg: 'Tap "LINEUP" and pick your concerts.',
+    empty_grid_big: 'NO GRID.', empty_grid_msg: 'No concerts on the main stages this day. Switch back to LIST.',
+    empty_tl_big: 'NO CONCERTS.', empty_tl_msg: 'Pick another day.',
+    empty_group_big: 'EMPTY.', empty_group_msg: 'Nobody (you included) picked a concert for this day.',
+    conflict_tag: 'CONFLICT', info_group: 'Band info',
+    print_none: 'No concert selected on the main stages',
+    rate: 'RATE', rate_title: 'Rate this concert', rate_note_suffix: ' · note',
+    label_note: 'Rating', label_comment: 'Comment',
+    note_placeholder: 'Setlist, vibe, sound…',
+    btn_clear: 'Clear', btn_save: 'Save',
+    recap_title: 'FESTIVAL RECAP', recap_avg: '/5 avg',
+    spotify_listen: '♪ Listen on Spotify', spotify_none: 'Spotify: not found',
+    settings_title: 'SETTINGS',
+    settings_intro: 'Your nickname and color. Visible to friends when you share your planning.',
+    label_nick: 'Nickname', name_placeholder: 'Your name', label_color: 'Color',
+    label_language: 'Language',
+    btn_ok: 'OK',
+    name_required: 'Pick a name so your friends recognize you',
+    saved: 'Identity saved',
+    qr_title: 'MY QR',
+    qr_need_name: 'Pick a name before sharing your planning. Your friends will see this nickname in their app.',
+    qr_intro: 'Share your planning: your friends scan this code with their camera, the site opens and imports {c}.',
+    qr_link_label: 'Or copy-paste this link (open it in a browser)',
+    btn_copy_link: 'Copy link', btn_close: 'Close', copied: 'Copied',
+    import_title: 'IMPORT',
+    import_intro: 'Planning from “{n}” — {c}{extra}.',
+    import_as: 'Import as',
+    import_help: 'FRIEND: their planning appears next to yours (GROUP view). MY SETLIST: it\'s a transfer of YOUR own planning from another device.',
+    import_friend_btn: 'Friend: {n}',
+    import_merge_btn: 'My setlist — Add', import_replace_btn: 'My setlist — Overwrite',
+    btn_cancel: 'Cancel',
+    confirm_merge: 'Add {c} to YOUR setlist?',
+    confirm_replace: 'Overwrite your current setlist{cur}?',
+    friend_imported: 'imported', friend_updated: 'updated',
+    setlist_replaced: 'replaced', setlist_updated: 'updated',
+    toast_friend: '{n} {verb} · {c}{dropped}',
+    toast_setlist: 'Setlist {verb} · {c}{dropped}',
+    bad_format: 'Invalid format', unknown_format: 'Unknown format',
+    friends_title: 'FRIENDS',
+    friends_intro: '{c}. Turn off visibility to hide them from the group planning.',
+    friends_empty_big: 'ALONE.', friends_empty_msg: 'Open a friend\'s QR link to add them.',
+    confirm_delete_friend: 'Delete {name}?',
+  },
+};
+
+function t(key, vars) {
+  let s = (STRINGS[state.lang] || STRINGS.fr)[key];
+  if (s == null) s = STRINGS.fr[key] ?? key;
+  if (vars) for (const k in vars) s = s.replaceAll('{' + k + '}', vars[k]);
+  return s;
+}
+// Plural-aware count phrase. base e.g. 'concert' → "{n} concerts".
+// fr: singular for 0/1; en: singular only for 1.
+function nc(base, n) {
+  const isOther = state.lang === 'fr' ? n > 1 : n !== 1;
+  return t('count_' + base + '_' + (isOther ? 'other' : 'one'), { n });
+}
+// " · N unknown" suffix when import drops unrecognized concert ids; '' if none.
+function droppedSuffix(d) { return d ? ' · ' + nc('unknown', d) : ''; }
+
+// Resolve UI language: explicit user choice wins, else browser detection, else fr.
+function detectLang() {
+  const explicit = load('hf_lang', null);
+  if (explicit === 'fr' || explicit === 'en') return explicit;
+  return (navigator.language || '').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+}
+
+// Day tab label localized via explicit labelEn on DAYS.
+function dayLabel(d) { return state.lang === 'en' ? (d.labelEn || d.label) : d.label; }
+
+// Genre strings are mostly English; translate the recurring French descriptor words.
+const GENRE_WORDS = [
+  [/Atmosphérique/gi, 'Atmospheric'], [/Dépressif/gi, 'Depressive'],
+  [/Mélodique/gi, 'Melodic'], [/Psychédélique/gi, 'Psychedelic'],
+  [/Symphonique/gi, 'Symphonic'], [/Progressif/gi, 'Progressive'],
+  [/Technique/gi, 'Technical'], [/Gothique/gi, 'Gothic'],
+  [/Industriel/gi, 'Industrial'], [/\bIndus\b/gi, 'Industrial'],
+];
+function tGenre(g) {
+  if (!g || state.lang !== 'en') return g;
+  let out = g;
+  for (const [re, en] of GENRE_WORDS) out = out.replace(re, en);
+  return out;
+}
+
+// Apply translations to the static HTML chrome (nav tabs + footer buttons).
+function applyStaticI18n() {
+  const map = { lineup: 'nav_lineup', planning: 'nav_planning', group: 'nav_group' };
+  $$('.view-tab').forEach(b => { b.textContent = t(map[b.dataset.view] || ''); });
+  const f = $('#btn-friends'); if (f) f.lastChild.textContent = t('btn_friends');
+  const q = $('#btn-qr'); if (q) q.lastChild.textContent = t('btn_qr');
+}
+
 // ---------- State ----------
 const COLORS = ['#e63946','#f5b400','#84cc16','#06b6d4','#a855f7','#ec4899','#f97316','#22c55e','#3b82f6','#eab308'];
 const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="5 12 10 17 19 8"/></svg>';
@@ -1684,6 +1848,7 @@ let state = {
   lineupFilter: load('hf_lineupFilter', 'all'),
   planningMode: load('hf_planningMode', 'list'),
   ratings: load('hf_ratings', {}), // { [concertId]: { stars: 1..5, note: string } }
+  lang: detectLang(), // 'fr' default; browser-detected unless user set hf_lang
 };
 
 // Migrate legacy number-only ratings to the {stars, note} shape.
@@ -1815,7 +1980,7 @@ function renderDays() {
     const tab = el('button', {
       class: 'day-tab' + (d.id === state.day ? ' active' : ''),
       onClick: () => { state.day = d.id; save(); render(); }
-    }, d.label);
+    }, dayLabel(d));
     if (count > 0) tab.appendChild(el('span', { class: 'badge' }, String(count)));
     root.appendChild(tab);
   }
@@ -1826,13 +1991,12 @@ function renderStats() {
   const conflicts = conflictsFor(state.selected).size / 2; // pairs
   $('#stats').innerHTML = '';
   $('#stats').appendChild(el('span', {}, ''));
-  const s1 = el('span', {}, ` ${total} `);
   const s2 = el('span', { class: 'count' }, String(total));
   $('#stats').appendChild(s2);
   $('#stats').appendChild(document.createTextNode(' concerts'));
   if (conflicts > 0) {
     $('#stats').appendChild(document.createTextNode(' · '));
-    const c = el('span', { style: { color: 'var(--warn)' } }, `${Math.round(conflicts)} conflit${conflicts>1?'s':''}`);
+    const c = el('span', { style: { color: 'var(--warn)' } }, nc('conflict', Math.round(conflicts)));
     $('#stats').appendChild(c);
   }
 }
@@ -1866,7 +2030,7 @@ function concertCard(c, opts={}) {
   ));
   const middle = el('div', {});
   middle.appendChild(el('div', { class: 'name' }, c.n));
-  if (c.g) middle.appendChild(el('div', { class: 'genre' }, c.g));
+  if (c.g) middle.appendChild(el('div', { class: 'genre' }, tGenre(c.g)));
   if (friendsHere.length) {
     const fl = el('div', { class: 'friends-line' });
     friendsHere.forEach((f, i) => {
@@ -1882,7 +2046,7 @@ function concertCard(c, opts={}) {
   if (info) {
     right.appendChild(el('button', {
       class: 'info-btn',
-      title: 'Infos groupe',
+      title: t('info_group'),
       onClick: (e) => { e.stopPropagation(); showInfo(c, info); }
     }, 'i'));
   }
@@ -1912,7 +2076,7 @@ function lineupTimeRow(c, opts = {}) {
   const info = el('div', { class: 'info' });
   info.appendChild(el('div', { class: 'concert-name' }, c.n));
   const metaParts = [`${stage.label} · ${c.s} → ${c.e}`];
-  if (c.g) metaParts.push(c.g);
+  if (c.g) metaParts.push(tGenre(c.g));
   info.appendChild(el('div', { class: 'concert-meta' }, metaParts.join(' · ')));
   if (friendsHere.length) {
     const fl = el('div', { class: 'friends-line' });
@@ -1923,12 +2087,12 @@ function lineupTimeRow(c, opts = {}) {
     info.appendChild(fl);
   }
   row.appendChild(info);
-  if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+  if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, t('conflict_tag')));
   const infoData = INFO[c.n];
   if (infoData) {
     row.appendChild(el('button', {
       class: 'info-btn',
-      title: 'Infos groupe',
+      title: t('info_group'),
       onClick: (e) => { e.stopPropagation(); showInfo(c, infoData); }
     }, 'i'));
   }
@@ -1951,15 +2115,15 @@ function renderLineup() {
     class: 'lm-tab' + (state.lineupMode === mode ? ' active' : ''),
     onClick: () => { state.lineupMode = mode; save(); render(); }
   }, label);
-  toggle.appendChild(mkBtn('byStage', 'PAR SCÈNE'));
-  toggle.appendChild(mkBtn('byTime', 'PAR HEURE'));
+  toggle.appendChild(mkBtn('byStage', t('lineup_by_stage')));
+  toggle.appendChild(mkBtn('byTime', t('lineup_by_time')));
   const mkFilter = (f, label) => el('button', {
     class: 'lm-tab' + (state.lineupFilter === f ? ' active' : ''),
     onClick: () => { state.lineupFilter = f; save(); render(); }
   }, label);
   const filterGroup = el('div', { class: 'lineup-filter-group' });
-  filterGroup.appendChild(mkFilter('all', 'TOUTES'));
-  filterGroup.appendChild(mkFilter('main', 'PRINCIPALES'));
+  filterGroup.appendChild(mkFilter('all', t('filter_all')));
+  filterGroup.appendChild(mkFilter('main', t('filter_main')));
   toggle.appendChild(filterGroup);
   root.appendChild(toggle);
 
@@ -2024,16 +2188,16 @@ function renderPlanning() {
     class: 'lm-tab' + (state.planningMode === mode ? ' active' : ''),
     onClick: () => { state.planningMode = mode; save(); render(); }
   }, label);
-  group.appendChild(mkBtn('list', 'LISTE'));
-  group.appendChild(mkBtn('grid', 'GRILLE'));
-  group.appendChild(mkBtn('timeline', 'TIMELINE'));
+  group.appendChild(mkBtn('list', t('planning_list')));
+  group.appendChild(mkBtn('grid', t('planning_grid')));
+  group.appendChild(mkBtn('timeline', t('planning_timeline')));
   toggle.appendChild(group);
   if (state.planningMode === 'grid') {
     toggle.appendChild(el('button', {
       class: 'planning-print-btn',
-      title: 'Imprimer mon planning',
+      title: t('print_title'),
       onClick: () => printMyPlanning()
-    }, '⎙ IMPRIMER'));
+    }, t('print_btn')));
   }
   root.appendChild(toggle);
 
@@ -2047,8 +2211,8 @@ function renderPlanning() {
     .sort((a,b) => toMin(a.s) - toMin(b.s));
   if (mine.length === 0) {
     root.appendChild(el('div', { class: 'planning-empty' },
-      el('div', { class: 'big' }, 'RIEN.'),
-      el('div', {}, 'Tape "LINEUP" et choisis tes concerts.')
+      el('div', { class: 'big' }, t('empty_planning_big')),
+      el('div', {}, t('empty_planning_msg'))
     ));
     return;
   }
@@ -2089,7 +2253,7 @@ function renderPlanning() {
         info.appendChild(fl);
       }
       row.appendChild(info);
-      if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, 'CONFLIT'));
+      if (hasConflict) row.appendChild(el('span', { class: 'conflict-tag' }, t('conflict_tag')));
       if (isConcertOver(concert)) row.appendChild(ratingButton(concert));
       const ib = infoButton(concert);
       if (ib) row.appendChild(ib);
@@ -2111,8 +2275,8 @@ function renderPlanningGrid(root) {
   const concerts = CONCERTS.filter(c => c.d === day && MAIN_IDS.includes(c.st));
   if (concerts.length === 0) {
     root.appendChild(el('div', { class: 'planning-empty' },
-      el('div', { class: 'big' }, 'PAS DE GRILLE.'),
-      el('div', {}, 'Aucun concert sur les scènes principales ce jour. Repasse en LISTE.')
+      el('div', { class: 'big' }, t('empty_grid_big')),
+      el('div', {}, t('empty_grid_msg'))
     ));
     return;
   }
@@ -2223,8 +2387,8 @@ function renderPlanningTimeline(root) {
   const concerts = CONCERTS.filter(c => c.d === day);
   if (concerts.length === 0) {
     root.appendChild(el('div', { class: 'planning-empty' },
-      el('div', { class: 'big' }, 'PAS DE CONCERTS.'),
-      el('div', {}, 'Choisis un autre jour.')
+      el('div', { class: 'big' }, t('empty_tl_big')),
+      el('div', {}, t('empty_tl_msg'))
     ));
     return;
   }
@@ -2367,14 +2531,15 @@ function buildPrintPage(dayId, conflicts) {
   const pct = (min) => ((min - rangeStart) / totalMin * 100) + '%';
   const pctH = (min) => (min / totalMin * 100) + '%';
 
-  const dayLabel = dayById[dayId]?.label || dayId;
+  const dayObj = dayById[dayId];
+  const dayLbl = dayObj ? dayLabel(dayObj) : dayId;
   const page = el('div', { class: 'pg-page' });
   const wrap = el('div', { class: 'pg-wrap' });
 
   const printHeader = el('div', { class: 'pg-print-header' });
-  printHeader.appendChild(el('div', { class: 'pgh-title' }, `HELLFEST '26 · ${dayLabel}`));
+  printHeader.appendChild(el('div', { class: 'pgh-title' }, `HELLFEST '26 · ${dayLbl}`));
   printHeader.appendChild(el('div', { class: 'pgh-meta' },
-    `${state.user.name} · ${selected.length} concert${selected.length>1?'s':''}`
+    `${state.user.name} · ${nc('concert', selected.length)}`
   ));
   wrap.appendChild(printHeader);
 
@@ -2447,7 +2612,7 @@ function buildPrintGrid() {
     if (page) pages.push(page);
   }
   if (pages.length === 0) {
-    toast('Aucun concert sélectionné sur les scènes principales');
+    toast(t('print_none'));
     return false;
   }
   const area = $('#print-area');
@@ -2492,8 +2657,8 @@ function renderGroup() {
   const sortedKeys = Object.keys(slots).map(Number).sort((a,b) => a-b);
   if (sortedKeys.length === 0) {
     root.appendChild(el('div', { class: 'planning-empty' },
-      el('div', { class: 'big' }, 'VIDE.'),
-      el('div', {}, 'Personne (toi inclus) n\'a sélectionné de concert pour ce jour.')
+      el('div', { class: 'big' }, t('empty_group_big')),
+      el('div', {}, t('empty_group_msg'))
     ));
     return;
   }
@@ -2540,6 +2705,7 @@ function renderGroup() {
 }
 
 function render() {
+  applyStaticI18n();
   renderIdentity();
   renderDays();
   renderViewTabs();
@@ -2586,10 +2752,10 @@ function ratingButton(c) {
   const stars = r?.stars || 0;
   const label = stars
     ? '★'.repeat(stars) + (r.note ? ' ✎' : '')
-    : 'NOTER';
+    : t('rate');
   return el('button', {
     class: 'rate-btn' + (stars ? ' rated' : ''),
-    title: stars ? `${stars}/5${r.note ? ' · note' : ''}` : 'Noter ce concert',
+    title: stars ? `${stars}/5${r.note ? t('rate_note_suffix') : ''}` : t('rate_title'),
     onClick: (e) => { e.stopPropagation(); openRatingModal(c); }
   }, label);
 }
@@ -2619,12 +2785,12 @@ function openRatingModal(c) {
     }, '★'));
   }
   repaint();
-  body.push(el('label', {}, 'Note'));
+  body.push(el('label', {}, t('label_note')));
   body.push(starsRow);
 
-  body.push(el('label', {}, 'Commentaire'));
+  body.push(el('label', {}, t('label_comment')));
   const noteEl = el('textarea', {
-    placeholder: 'Setlist, ambiance, son…',
+    placeholder: t('note_placeholder'),
     maxlength: 500
   });
   noteEl.value = current.note || '';
@@ -2638,7 +2804,7 @@ function openRatingModal(c) {
         delete state.ratings[c.id];
         save(); closeModal(); render();
       }
-    }, 'Effacer'));
+    }, t('btn_clear')));
   }
   actions.appendChild(el('button', {
     class: 'btn primary',
@@ -2651,7 +2817,7 @@ function openRatingModal(c) {
       }
       save(); closeModal(); render();
     }
-  }, 'Enregistrer'));
+  }, t('btn_save')));
   body.push(actions);
 
   showModal(c.n, body);
@@ -2672,22 +2838,22 @@ function festivalRecap() {
     .sort((a, b) => b.r.stars - a.r.stars || a.c.n.localeCompare(b.c.n))
     .slice(0, 3);
   const box = el('div', { class: 'recap' });
-  box.appendChild(el('div', { class: 'recap-title' }, 'BILAN FESTIVAL'));
+  box.appendChild(el('div', { class: 'recap-title' }, t('recap_title')));
   const stats = el('div', { class: 'recap-stats' });
   stats.appendChild(el('span', {},
     el('span', { class: 'recap-num' }, String(starred.length)),
-    ' noté' + (starred.length > 1 ? 's' : '')
+    ' ' + nc('rated', starred.length).replace(/^\d+\s*/, '')
   ));
   if (starred.length) {
     stats.appendChild(el('span', {},
       el('span', { class: 'recap-num' }, avg.toFixed(1)),
-      '/5 moy.'
+      t('recap_avg')
     ));
   }
   if (notes) {
     stats.appendChild(el('span', {},
       el('span', { class: 'recap-num' }, String(notes)),
-      ' commentaire' + (notes > 1 ? 's' : '')
+      ' ' + nc('comment', notes).replace(/^\d+\s*/, '')
     ));
   }
   box.appendChild(stats);
@@ -2707,14 +2873,14 @@ function festivalRecap() {
 function showInfo(c, info) {
   const stage = stageById[c.st];
   const body = [];
-  const metaBits = [c.g, stage?.label, `${c.s} → ${c.e}`].filter(Boolean);
+  const metaBits = [tGenre(c.g), stage?.label, `${c.s} → ${c.e}`].filter(Boolean);
   body.push(el('div', { class: 'info-genre' }, metaBits.join(' · ')));
   if (info.sp) {
     body.push(el('a', {
       class: 'info-spotify', href: info.sp, target: '_blank', rel: 'noopener'
-    }, '♪ Écouter sur Spotify'));
+    }, t('spotify_listen')));
   } else {
-    body.push(el('div', { class: 'info-spotify-none' }, 'Spotify : introuvable'));
+    body.push(el('div', { class: 'info-spotify-none' }, t('spotify_none')));
   }
   body.push(el('div', { class: 'info-bio' }, info.bio));
   showModal(c.n, body);
@@ -2730,8 +2896,22 @@ function openIdentity(opts = {}) {
   // so they pick a real pseudo instead of editing the placeholder.
   const initial = isDefaultName(state.user.name) ? '' : state.user.name;
   const nameInput = el('input', {
-    type: 'text', value: initial, maxlength: 12, placeholder: 'Ton prénom'
+    type: 'text', value: initial, maxlength: 12, placeholder: t('name_placeholder')
   });
+  // Language toggle — explicit choice persists to hf_lang and overrides browser detection.
+  const langGroup = el('div', { class: 'lineup-mode-toggle' });
+  const mkLang = (code) => el('button', {
+    class: 'lm-tab' + (state.lang === code ? ' active' : ''),
+    onClick: () => {
+      if (state.lang === code) return;
+      state.lang = code;
+      localStorage.setItem('hf_lang', JSON.stringify(code));
+      render();
+      openIdentity(opts);
+    }
+  }, code.toUpperCase());
+  langGroup.appendChild(mkLang('fr'));
+  langGroup.appendChild(mkLang('en'));
   const picker = el('div', { class: 'color-picker' });
   let chosenColor = state.user.color;
   for (const c of COLORS) {
@@ -2746,11 +2926,13 @@ function openIdentity(opts = {}) {
     });
     picker.appendChild(sw);
   }
-  showModal('IDENTITÉ', [
-    el('p', {}, intro || 'Ton pseudo et ta couleur. Visibles par tes amis quand tu partages ton planning.'),
-    el('label', {}, 'Pseudo'),
+  showModal(t('settings_title'), [
+    el('p', {}, intro || t('settings_intro')),
+    el('label', {}, t('label_language')),
+    langGroup,
+    el('label', {}, t('label_nick')),
     nameInput,
-    el('label', {}, 'Couleur'),
+    el('label', {}, t('label_color')),
     picker,
     el('div', { class: 'btn-row' },
       el('button', {
@@ -2758,7 +2940,7 @@ function openIdentity(opts = {}) {
         onClick: () => {
           const raw = nameInput.value.trim();
           if (requireRealName && isDefaultName(raw)) {
-            toast('Choisis un prénom pour que tes potes te reconnaissent');
+            toast(t('name_required'));
             nameInput.focus();
             return;
           }
@@ -2767,10 +2949,10 @@ function openIdentity(opts = {}) {
           save();
           closeModal();
           render();
-          toast('Identité enregistrée');
+          toast(t('saved'));
           if (onSaved) onSaved();
         }
-      }, 'OK')
+      }, t('btn_ok'))
     )
   ]);
 }
@@ -2803,7 +2985,7 @@ function openQR() {
   if (isDefaultName(state.user.name)) {
     openIdentity({
       requireRealName: true,
-      intro: 'Choisis un prénom avant de partager ton planning. Tes potes verront ce pseudo dans leur appli.',
+      intro: t('qr_need_name'),
       onSaved: openQR
     });
     return;
@@ -2819,20 +3001,20 @@ function openQR() {
 
   const qrBox = el('div', { class: 'qr-box', html: svgStr });
 
-  showModal('MON QR', [
-    el('p', {}, `Partage ton planning : tes potes scannent ce code avec l'appareil photo, le site s'ouvre et importe ${payload.ids.length} concert${payload.ids.length>1?'s':''}.`),
+  showModal(t('qr_title'), [
+    el('p', {}, t('qr_intro', { c: nc('concert', payload.ids.length) })),
     qrBox,
-    el('label', {}, 'Ou copie-colle ce lien (à ouvrir dans un navigateur)'),
+    el('label', {}, t('qr_link_label')),
     el('div', { class: 'qr-payload' }, shareUrl),
     el('div', { class: 'btn-row' },
       el('button', {
         class: 'btn',
         onClick: () => {
           navigator.clipboard?.writeText(shareUrl);
-          toast('Copié');
+          toast(t('copied'));
         }
-      }, 'Copier le lien'),
-      el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
+      }, t('btn_copy_link')),
+      el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close'))
     )
   ]);
 }
@@ -2857,8 +3039,8 @@ function importAsFriend(payload, validIds, dropped) {
   else state.friends.push(friend);
   save();
   render();
-  const verb = prev ? 'mis à jour' : 'importé';
-  toast(`${payload.n} ${verb} · ${validIds.length} concerts${dropped?' · '+dropped+' inconnus':''}`);
+  const verb = prev ? t('friend_updated') : t('friend_imported');
+  toast(t('toast_friend', { n: payload.n, verb, c: nc('concert', validIds.length), dropped: droppedSuffix(dropped) }));
 }
 
 // Import the payload as MY OWN setlist — transfer from another device.
@@ -2868,8 +3050,8 @@ function importToMine(payload, validIds, mode, dropped) {
   else for (const id of validIds) state.selected.add(id);
   save();
   render();
-  const verb = mode === 'replace' ? 'remplacée' : 'mise à jour';
-  toast(`Setlist ${verb} · ${state.selected.size} concerts${dropped?' · '+dropped+' inconnus':''}`);
+  const verb = mode === 'replace' ? t('setlist_replaced') : t('setlist_updated');
+  toast(t('toast_setlist', { verb, c: nc('concert', state.selected.size), dropped: droppedSuffix(dropped) }));
 }
 
 function handlePayload(str) {
@@ -2884,56 +3066,57 @@ function handlePayload(str) {
   }
   let payload;
   try { payload = JSON.parse(str); }
-  catch { toast('Format invalide'); return; }
-  if (payload.t !== 'sched' || !payload.n) { toast('Format inconnu'); return; }
+  catch { toast(t('bad_format')); return; }
+  if (payload.t !== 'sched' || !payload.n) { toast(t('unknown_format')); return; }
 
   // Validate concert IDs
   const validIds = (payload.ids || []).filter(id => concertById[id]);
   const dropped = (payload.ids || []).length - validIds.length;
 
   // Ask: is this a friend's planning, or a transfer of MY own setlist?
-  showModal('IMPORTER', [
-    el('p', {}, `Planning de « ${payload.n} » — ${validIds.length} concert${validIds.length>1?'s':''}${dropped?' · '+dropped+' inconnu'+(dropped>1?'s':'')+' ignoré'+(dropped>1?'s':''):''}.`),
-    el('label', {}, 'Importer comme'),
-    el('p', {}, 'AMI : son planning s\'ajoute à côté du tien (vue GROUPE). MA SETLIST : c\'est un transfert de TON propre planning depuis un autre appareil.'),
+  showModal(t('import_title'), [
+    el('p', {}, t('import_intro', { n: payload.n, c: nc('concert', validIds.length), extra: droppedSuffix(dropped) })),
+    el('label', {}, t('import_as')),
+    el('p', {}, t('import_help')),
     el('div', { class: 'btn-row' },
       el('button', {
         class: 'btn primary',
         style: { width: '100%' },
         onClick: () => { closeModal(); importAsFriend(payload, validIds, dropped); }
-      }, `Ami : ${payload.n}`)
+      }, t('import_friend_btn', { n: payload.n }))
     ),
     el('div', { class: 'btn-row', style: { flexWrap: 'wrap' } },
       el('button', {
         class: 'btn',
         onClick: () => {
-          if (!confirm(`Ajouter ${validIds.length} concert${validIds.length>1?'s':''} à TA setlist ?`)) return;
+          if (!confirm(t('confirm_merge', { c: nc('concert', validIds.length) }))) return;
           closeModal();
           importToMine(payload, validIds, 'merge', dropped);
         }
-      }, 'Ma setlist — Ajouter'),
+      }, t('import_merge_btn')),
       el('button', {
         class: 'btn',
         onClick: () => {
-          if (!confirm(`Écraser ta setlist actuelle${state.selected.size?` (${state.selected.size} concert${state.selected.size>1?'s':''})`:''} ?`)) return;
+          const cur = state.selected.size ? ` (${nc('concert', state.selected.size)})` : '';
+          if (!confirm(t('confirm_replace', { cur }))) return;
           closeModal();
           importToMine(payload, validIds, 'replace', dropped);
         }
-      }, 'Ma setlist — Écraser')
+      }, t('import_replace_btn'))
     ),
     el('div', { class: 'btn-row' },
-      el('button', { class: 'btn ghost', onClick: closeModal }, 'Annuler')
+      el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_cancel'))
     )
   ]);
 }
 
 function openFriends() {
   const body = [];
-  body.push(el('p', {}, `${state.friends.length} ami${state.friends.length>1?'s':''}. Désactive la visibilité pour les masquer du planning groupe.`));
+  body.push(el('p', {}, t('friends_intro', { c: nc('friend', state.friends.length) })));
   if (state.friends.length === 0) {
     body.push(el('div', { class: 'empty-state' },
-      el('div', { class: 'big' }, 'SEUL.'),
-      el('div', {}, 'Ouvre le lien QR d\'un pote pour l\'ajouter.')
+      el('div', { class: 'big' }, t('friends_empty_big')),
+      el('div', {}, t('friends_empty_msg'))
     ));
   }
   for (const f of state.friends) {
@@ -2941,7 +3124,7 @@ function openFriends() {
     row.appendChild(el('div', { class: 'friend-avatar', style: { background: f.color } }, f.name.charAt(0)));
     const info = el('div', { class: 'friend-info' });
     info.appendChild(el('div', { class: 'n' }, f.name));
-    info.appendChild(el('div', { class: 'm' }, `${(f.ids||[]).length} concerts`));
+    info.appendChild(el('div', { class: 'm' }, nc('concert', (f.ids||[]).length)));
     row.appendChild(info);
     const tog = el('button', {
       class: 'friend-toggle' + (f.visible !== false ? ' on' : ''),
@@ -2955,7 +3138,7 @@ function openFriends() {
     row.appendChild(el('button', {
       class: 'btn ghost', style: { padding: '4px 8px', marginLeft: '8px', fontSize: '10px' },
       onClick: () => {
-        if (confirm(`Supprimer ${f.name} ?`)) {
+        if (confirm(t('confirm_delete_friend', { name: f.name }))) {
           state.friends = state.friends.filter(x => x.id !== f.id);
           save(); openFriends(); render();
         }
@@ -2964,9 +3147,9 @@ function openFriends() {
     body.push(row);
   }
   body.push(el('div', { class: 'btn-row' },
-    el('button', { class: 'btn ghost', onClick: closeModal }, 'Fermer')
+    el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close'))
   ));
-  showModal('AMIS', body);
+  showModal(t('friends_title'), body);
 }
 
 // ---------- Wire up ----------
