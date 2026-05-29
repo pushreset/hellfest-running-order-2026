@@ -1097,6 +1097,7 @@
 // Times past midnight belong to the same "festival day" as the start (handled in code)
 
 const DAYS = [
+  { id: 'tue16', label: 'MAR 16', full: 'Mardi 16 juin', labelEn: 'TUE 16', date: '2026-06-16' },
   { id: 'wed17', label: 'MER 17', full: 'Mercredi 17 juin', labelEn: 'WED 17', date: '2026-06-17' },
   { id: 'thu18', label: 'JEU 18', full: 'Jeudi 18 juin', labelEn: 'THU 18', date: '2026-06-18' },
   { id: 'fri19', label: 'VEN 19', full: 'Vendredi 19 juin', labelEn: 'FRI 19', date: '2026-06-19' },
@@ -1117,6 +1118,9 @@ const STAGES = [
   { id: 'mc',  label: 'METAL CORNER', zone: 'hellcity', color: '#f97316' },
   { id: 'ph',  label: 'PURPLE HOUSE', zone: 'hellcity', color: '#a855f7' },
   { id: 'hc',  label: 'HELLCITY BREWPUB', zone: 'hellcity', color: '#ea580c' },
+  // Le Off (Parking E-Leclerc Clisson, 16-17 juin)
+  { id: 'oms1', label: 'OFF MAINSTAGE 01', zone: 'off', color: '#be123c' },
+  { id: 'oms2', label: 'OFF MAINSTAGE 02', zone: 'off', color: '#16a34a' },
 ];
 
 const CONCERTS = [
@@ -1464,6 +1468,46 @@ const CONCERTS = [
   { d:'sun21', st:'hc', n:'RING OF CASH', s:'15:20', e:'16:00', g:'power folk rock' },
   { d:'sun21', st:'hc', n:'FRANZ GUETT', s:'16:30', e:'17:10', g:'rock fusion' },
   { d:'sun21', st:'hc', n:'VIBRANT VARNISH', s:'17:40', e:'18:20', g:'rock' },
+
+  // ============ LE OFF — MARDI 16 ============
+  // OFF MAINSTAGE 01
+  { d:'tue16', st:'oms1', n:'SICK SAD WORLD',  s:'13:30', e:'14:00', g:'Post Metal' },
+  { d:'tue16', st:'oms1', n:"HANGMAN'S BLOOD", s:'14:30', e:'15:00', g:'Sludge Stoner' },
+  { d:'tue16', st:'oms1', n:'APHASIS',         s:'15:30', e:'16:00', g:'Alt Metal' },
+  { d:'tue16', st:'oms1', n:'DERELICTS',       s:'16:30', e:'17:00', g:'Prog Death Metal' },
+  { d:'tue16', st:'oms1', n:'GHOST ANTHEM',    s:'17:30', e:'18:00', g:'Metalcore' },
+  { d:'tue16', st:'oms1', n:'HANNIBAL',        s:'18:30', e:'19:15', g:'Rock Metal (Gagnant Tremplin Le Off 2026)' },
+  { d:'tue16', st:'oms1', n:'SLIP PANTHER',    s:'20:15', e:'21:15', g:"Hard & Glamrock 80'/90' Tribute" },
+  // OFF MAINSTAGE 02
+  { d:'tue16', st:'oms2', n:'ENDLESS AGONY',   s:'13:00', e:'13:30', g:'Hardcore Thrash Metal' },
+  { d:'tue16', st:'oms2', n:'MU',              s:'14:00', e:'14:30', g:'Post Metal Prog' },
+  { d:'tue16', st:'oms2', n:'SARMATES',        s:'15:00', e:'15:30', g:'Ethnic Metal' },
+  { d:'tue16', st:'oms2', n:'DARKROSE',        s:'16:00', e:'16:30', g:'Sparkling Dark Rock' },
+  { d:'tue16', st:'oms2', n:'REDSTONE',        s:'17:00', e:'17:30', g:'Stoner Metal' },
+  { d:'tue16', st:'oms2', n:'YERAO',           s:'18:00', e:'18:30', g:'Nu-Core' },
+  { d:'tue16', st:'oms2', n:'LOVEDRIVE',       s:'19:15', e:'20:15', g:'Scorpions Tribute' },
+
+  // ============ LE OFF — MERCREDI 17 ============
+  // OFF MAINSTAGE 01
+  { d:'wed17', st:'oms1', n:'REPULSIVE VISION',    s:'11:30', e:'12:00', g:'Old School Death Metal' },
+  { d:'wed17', st:'oms1', n:'KILL THE DRAMA QUEEN',s:'12:30', e:'13:00', g:'Alt Prog Metal' },
+  { d:'wed17', st:'oms1', n:'SEVEN EYED CROW',     s:'13:30', e:'14:00', g:'Prog Metal' },
+  { d:'wed17', st:'oms1', n:'BALLBREAKER',         s:'14:15', e:'15:00', g:'AC/DC Tribute (Hellfest Kids)' },
+  { d:'wed17', st:'oms1', n:'CARTOON MACHINE',     s:'15:30', e:'16:30', g:'Punk Rock Animé (Hellfest Kids)' },
+  { d:'wed17', st:'oms1', n:'ERADIKAL INSANE',     s:'17:00', e:'17:30', g:'Modern Death Metal' },
+  { d:'wed17', st:'oms1', n:'FACE 2 FAKE',         s:'18:00', e:'18:30', g:'Fusion Metal' },
+  { d:'wed17', st:'oms1', n:'COWBOYS FROM JAM',    s:'19:00', e:'20:00', g:'Pantera Tribute' },
+  { d:'wed17', st:'oms1', n:'SOLDIER SIDE',        s:'20:45', e:'21:45', g:'System of a Down Tribute' },
+  // OFF MAINSTAGE 02
+  { d:'wed17', st:'oms2', n:'LUX MENTIS',       s:'11:00', e:'11:30', g:'Metalcore' },
+  { d:'wed17', st:'oms2', n:'VIRGIN PROZAK',    s:'12:00', e:'12:30', g:'Heavy Rock' },
+  { d:'wed17', st:'oms2', n:'DVM SPERO',        s:'13:00', e:'13:30', g:'Modern Metal' },
+  { d:'wed17', st:'oms2', n:"ROCK'N PUPPETS", s:'14:00', e:'14:30', g:'Marionette Rock and Roll (Hellfest Kids)' },
+  { d:'wed17', st:'oms2', n:"ROCK'N PUPPETS", s:'15:00', e:'15:30', g:'Marionette Rock and Roll (Hellfest Kids)' },
+  { d:'wed17', st:'oms2', n:'MONOLYTH',         s:'16:30', e:'17:00', g:'Melodic Thrash Death Metal' },
+  { d:'wed17', st:'oms2', n:'RETRACE THE LINES',s:'17:30', e:'18:00', g:'Modern Metal' },
+  { d:'wed17', st:'oms2', n:'INYOURFACE',       s:'18:30', e:'19:00', g:'Alt Metal' },
+  { d:'wed17', st:'oms2', n:'CARTOON MACHINE', s:'20:00', e:'21:00', g:'Punk Rock Animé' },
 ];
 
 // Assign stable IDs
@@ -2222,7 +2266,7 @@ function renderLineup() {
     const header = el('div', { class: 'stage-header' });
     header.appendChild(el('span', { class: 'stripe', style: { background: stage.color } }));
     header.appendChild(el('span', { class: 'name' }, stage.label));
-    header.appendChild(el('span', { class: 'zone' }, stage.zone === 'main' ? 'HELLFEST' : 'HELLCITY'));
+    header.appendChild(el('span', { class: 'zone' }, stage.zone === 'main' ? 'HELLFEST' : stage.zone === 'off' ? 'LE OFF' : 'HELLCITY'));
     group.appendChild(header);
     const concerts = CONCERTS.filter(c => c.d === day && c.st === stage.id)
       .sort((a,b) => toMin(a.s) - toMin(b.s));
