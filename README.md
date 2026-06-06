@@ -27,6 +27,12 @@ Une appli web autonome, installable sur ton téléphone, qui marche même sans r
 - **Mise à jour facile** : un même pote qui rescanne son QR met à jour son planning sans le dupliquer.
 - **Gestion des amis** : masquer, supprimer, renommer côté toi.
 
+### Le jour J
+- **Bouton "NOW"** : un résumé live de l'instant T pendant le festival —
+  - le concert **que tu as coché** qui joue maintenant (+ le suivant de ta sélection),
+  - **où sont tes potes** : ce que chaque ami regarde en ce moment,
+  - **rien de coché ?** une **suggestion** d'un groupe qui joue, choisie selon les genres que tu coches le plus.
+
 ### Après le show
 - **Note tes concerts** : étoiles (1–5) + petite note perso pour te souvenir des sets qui t'ont marqué.
 - **Récap** du festival une fois fini.
