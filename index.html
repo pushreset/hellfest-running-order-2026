@@ -1323,7 +1323,7 @@ const CONCERTS = [
   { d:'sat20', st:'ms2', n:'CAVALERA "CHAOS A.D."', s:'17:45', e:'18:30', g:'Thrash Metal' },
   { d:'sat20', st:'ms2', n:'ANTHRAX', s:'19:30', e:'20:30', g:'Thrash Metal' },
   { d:'sat20', st:'ms2', n:'MEGADETH', s:'21:50', e:'23:05', g:'Thrash Metal' },
-  { d:'sat20', st:'ms2', n:'VOLBEAT', s:'00:45', e:'02:00', g:"Hard Rock'n'Roll / Heavy Metal" },
+  { d:'sat20', st:'ms2', n:'BEHEMOTH', s:'00:35', e:'01:50', g:'Blackened Death Metal' },
   // WARZONE
   { d:'sat20', st:'wz', n:'FALSE REALITY', s:'11:05', e:'11:35', g:'Hardcore' },
   { d:'sat20', st:'wz', n:'COMBUST', s:'12:25', e:'13:05', g:'Hardcore' },
@@ -1353,7 +1353,6 @@ const CONCERTS = [
   { d:'sat20', st:'tp', n:'ORANSSI PAZUZU', s:'18:35', e:'19:25', g:'Black Metal Psychédélique' },
   { d:'sat20', st:'tp', n:'AURA NOIR', s:'20:35', e:'21:35', g:'Black Thrash' },
   { d:'sat20', st:'tp', n:"OLD MAN'S CHILD", s:'22:45', e:'23:45', g:'Black Metal' },
-  { d:'sat20', st:'tp', n:'BEHEMOTH', s:'00:55', e:'02:00', g:'Blackened Death Metal' },
   // ALTAR
   { d:'sat20', st:'al', n:'DVRK', s:'10:30', e:'11:00', g:'Deathcore / Nu Metal' },
   { d:'sat20', st:'al', n:'PROFANATION', s:'11:40', e:'12:20', g:'Death Metal' },
@@ -1987,6 +1986,24 @@ applyMigration('2026-05-21-lineup-shuffle', () => {
     if (Array.isArray(f.ids)) f.ids = f.ids.filter(id => !purge.has(id));
   }
   for (const id of purge) delete state.ratings[id];
+  save();
+});
+
+// 2026-06-06: VOLBEAT cancelled. BEHEMOTH moves from Temple (00:55) to
+// Mainstage 2 (00:35) on the same closing slot; the Temple slot is left
+// empty to avoid a clash. Remap the Behemoth id so users who already picked
+// it keep their selection, and purge the now-defunct Volbeat id.
+applyMigration('2026-06-06-volbeat-behemoth', () => {
+  const OLD = 'sat20-tp-0055', NEW = 'sat20-ms2-0035';
+  const remap = ids => { if (ids.has(OLD)) { ids.delete(OLD); ids.add(NEW); } };
+  remap(state.selected);
+  state.selected.delete('sat20-ms2-0045');
+  for (const f of state.friends) {
+    if (!Array.isArray(f.ids)) continue;
+    f.ids = f.ids.map(id => id === OLD ? NEW : id).filter(id => id !== 'sat20-ms2-0045');
+  }
+  if (state.ratings[OLD]) { state.ratings[NEW] = state.ratings[OLD]; delete state.ratings[OLD]; }
+  delete state.ratings['sat20-ms2-0045'];
   save();
 });
 
