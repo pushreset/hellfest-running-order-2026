@@ -735,7 +735,7 @@
   /* ============ ACTION BAR ============ */
   .actionbar {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
-    display: grid; grid-template-columns: 1fr 1fr 1.2fr;
+    display: grid; grid-template-columns: 1fr 1fr 1fr 1.2fr;
     background: var(--bg);
     border-top: 1px solid var(--line-2);
     padding-bottom: env(safe-area-inset-bottom);
@@ -752,6 +752,28 @@
   .actionbar button .icon { font-size: 18px; line-height: 1; }
   .actionbar button.primary { background: var(--red); color: var(--bg); }
   .actionbar button.primary .icon { color: var(--bg); }
+  .actionbar #btn-now .icon { color: var(--red); animation: nowpulse 1.6s ease-in-out infinite; }
+  @keyframes nowpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* NOW snapshot modal */
+  .now-head { font-family: var(--mono); font-size: 11px; color: var(--red);
+    letter-spacing: 0.1em; margin-bottom: 12px; }
+  .now-block { margin-bottom: 16px; }
+  .now-block-label { font-size: 10px; font-weight: 700; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--fg-mute); margin-bottom: 8px; }
+  .now-row { display: flex; gap: 8px; padding: 8px; background: var(--bg-2);
+    border: 1px solid var(--line); margin-bottom: 6px; align-items: stretch; }
+  .now-row.tappable { cursor: pointer; }
+  .now-row-bar { width: 3px; flex: 0 0 3px; border-radius: 2px; }
+  .now-row-name { font-weight: 700; font-size: 13px; }
+  .now-row-meta { font-size: 10px; color: var(--fg-mute); margin-top: 2px; }
+  .now-sug-label, .now-then { font-size: 10px; color: var(--fg-mute);
+    text-transform: uppercase; letter-spacing: 0.1em; margin: 8px 0 6px; }
+  .now-empty { font-size: 12px; color: var(--fg-mute); font-style: italic; }
+  .now-friend { display: flex; gap: 10px; align-items: center; padding: 6px 0; }
+  .now-friend-info .n { font-weight: 700; font-size: 13px; }
+  .now-friend-info .m { font-size: 11px; color: var(--fg); }
+  .now-friend-info .m.dim { color: var(--fg-mute); }
 
   /* ============ MAP overlay (festival plan, zoom + pan) ============ */
   .map-overlay {
@@ -1079,6 +1101,7 @@
   </div>
   <main class="content" id="content"></main>
   <footer class="actionbar">
+    <button id="btn-now"><span class="icon">●</span>NOW</button>
     <button id="btn-map"><span class="icon">⊞</span>PLAN</button>
     <button id="btn-friends"><span class="icon">◉</span>AMIS</button>
     <button id="btn-qr" class="primary"><span class="icon">▦</span>MON QR</button>
@@ -1766,7 +1789,16 @@ const concertById = Object.fromEntries(CONCERTS.map(c => [c.id, c]));
 const STRINGS = {
   fr: {
     nav_lineup: 'LINEUP', nav_planning: 'MON PLANNING', nav_group: 'GROUPE',
-    btn_friends: 'AMIS', btn_qr: 'MON QR', btn_map: 'PLAN',
+    btn_friends: 'AMIS', btn_qr: 'MON QR', btn_map: 'PLAN', btn_now: 'NOW',
+    now_title: 'MAINTENANT',
+    now_off: 'Rendez-vous pendant le festival : ce résumé live affiche qui joue, où sont tes potes et quoi voir à l\'instant T.',
+    now_you: 'Toi', now_friends: 'Tes potes',
+    now_ends_in: 'finit dans {m} min', now_starts_in: 'dans {m} min',
+    now_then: 'Ensuite, ton choix',
+    now_suggest: 'Rien de coché là — suggestion selon tes genres',
+    now_nothing: 'Rien à proximité pour l\'instant.',
+    now_no_friends: 'Aucun pote importé.',
+    now_friend_next: '{n} · dans {m} min', now_friend_idle: 'rien pour l\'instant',
     map_hint: 'Pince pour zoomer · glisse pour déplacer',
     count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
     count_friend_one: '{n} ami', count_friend_other: '{n} amis',
@@ -1829,7 +1861,16 @@ const STRINGS = {
   },
   en: {
     nav_lineup: 'LINEUP', nav_planning: 'MY PLANNING', nav_group: 'GROUP',
-    btn_friends: 'FRIENDS', btn_qr: 'MY QR', btn_map: 'MAP',
+    btn_friends: 'FRIENDS', btn_qr: 'MY QR', btn_map: 'MAP', btn_now: 'NOW',
+    now_title: 'RIGHT NOW',
+    now_off: 'Come back during the festival: this live snapshot shows who\'s playing, where your crew is, and what to catch right now.',
+    now_you: 'You', now_friends: 'Your crew',
+    now_ends_in: 'ends in {m} min', now_starts_in: 'in {m} min',
+    now_then: 'Next, your pick',
+    now_suggest: 'Nothing checked now — pick based on your genres',
+    now_nothing: 'Nothing nearby right now.',
+    now_no_friends: 'No friends imported.',
+    now_friend_next: '{n} · in {m} min', now_friend_idle: 'nothing right now',
     map_hint: 'Pinch to zoom · drag to move',
     count_concert_one: '{n} concert', count_concert_other: '{n} concerts',
     count_friend_one: '{n} friend', count_friend_other: '{n} friends',
@@ -1939,6 +1980,7 @@ function applyStaticI18n() {
   const f = $('#btn-friends'); if (f) f.lastChild.textContent = t('btn_friends');
   const q = $('#btn-qr'); if (q) q.lastChild.textContent = t('btn_qr');
   const m = $('#btn-map'); if (m) m.lastChild.textContent = t('btn_map');
+  const nw = $('#btn-now'); if (nw) nw.lastChild.textContent = t('btn_now');
 }
 
 // ---------- State ----------
@@ -3011,6 +3053,125 @@ function festivalRecap() {
   return box;
 }
 
+// ---------- "NOW" live snapshot ----------
+// Genre string -> lowercase words (drop short noise) for taste matching.
+function genreTokens(g) {
+  return (g || '').toLowerCase().split(/[^a-zà-ÿ0-9]+/).filter(w => w.length > 2);
+}
+
+// First concert in `ids` playing at festival-minute `min` on `day`.
+function playingNow(ids, day, min) {
+  for (const id of ids) {
+    const c = concertById[id];
+    if (c && c.d === day && min >= toMin(c.s) && min < toMin(c.e)) return c;
+  }
+  return null;
+}
+
+// Suggest an unselected concert for today, weighted by the genres I pick most.
+// Prefers one playing now, then genre affinity, then soonest, then main stage.
+function suggestByTaste(day, min) {
+  const freq = {};
+  for (const id of state.selected) {
+    const c = concertById[id];
+    if (c) for (const w of genreTokens(c.g)) freq[w] = (freq[w] || 0) + 1;
+  }
+  const haveTaste = Object.keys(freq).length > 0;
+  const score = c => genreTokens(c.g).reduce((s, w) => s + (freq[w] || 0), 0);
+  let best = null, bestKey = -Infinity;
+  for (const c of CONCERTS) {
+    if (c.d !== day || state.selected.has(c.id) || toMin(c.e) <= min) continue;
+    const playing = min >= toMin(c.s) && min < toMin(c.e);
+    const key = (playing ? 1e6 : 0) + (haveTaste ? score(c) * 1000 : 0)
+      - toMin(c.s) + (stageById[c.st]?.zone === 'main' ? 1 : 0);
+    if (key > bestKey) { bestKey = key; best = c; }
+  }
+  if (!best) return null;
+  return { c: best, playing: min >= toMin(best.s) && min < toMin(best.e) };
+}
+
+// One concert line; tappable when band info exists.
+function nowRow(c, status) {
+  const stage = stageById[c.st];
+  const info = INFO[c.n];
+  const attrs = { class: 'now-row' + (info ? ' tappable' : '') };
+  if (info) attrs.onClick = () => showInfo(c, info);
+  return el('div', attrs,
+    el('span', { class: 'now-row-bar', style: { background: stage?.color || '#888' } }),
+    el('div', { class: 'now-row-txt' },
+      el('div', { class: 'now-row-name' }, c.n),
+      el('div', { class: 'now-row-meta' },
+        [stage?.label, c.s + '→' + c.e, status].filter(Boolean).join(' · '))
+    )
+  );
+}
+
+function openNow() {
+  const now = getNow();
+  if (!now) {
+    showModal(t('now_title'), [
+      el('p', {}, t('now_off')),
+      el('div', { class: 'btn-row' },
+        el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close')))
+    ]);
+    return;
+  }
+  const day = now.dayId, min = now.min;
+  const body = [el('div', { class: 'now-head' }, '● ' + dayLabel(dayById[day]) + ' · ' + now.hm)];
+
+  // --- Me: my pick playing now, suggestion if none, then my next pick ---
+  const mineToday = [...state.selected].map(id => concertById[id]).filter(c => c && c.d === day);
+  const playing = mineToday.find(c => min >= toMin(c.s) && min < toMin(c.e));
+  const next = mineToday.filter(c => toMin(c.s) > min).sort((a, b) => toMin(a.s) - toMin(b.s))[0];
+
+  const meBox = el('div', { class: 'now-block' },
+    el('div', { class: 'now-block-label' }, t('now_you')));
+  if (playing) {
+    meBox.appendChild(nowRow(playing, t('now_ends_in', { m: toMin(playing.e) - min })));
+  } else {
+    const sug = suggestByTaste(day, min);
+    if (sug) {
+      meBox.appendChild(el('div', { class: 'now-sug-label' }, t('now_suggest')));
+      meBox.appendChild(nowRow(sug.c, sug.playing
+        ? t('now_ends_in', { m: toMin(sug.c.e) - min })
+        : t('now_starts_in', { m: toMin(sug.c.s) - min })));
+    } else {
+      meBox.appendChild(el('div', { class: 'now-empty' }, t('now_nothing')));
+    }
+  }
+  if (next) {
+    meBox.appendChild(el('div', { class: 'now-then' }, t('now_then')));
+    meBox.appendChild(nowRow(next, t('now_starts_in', { m: toMin(next.s) - min })));
+  }
+  body.push(meBox);
+
+  // --- Friends: what each visible friend is watching now (else next, else idle) ---
+  const friends = state.friends.filter(f => f.visible !== false);
+  const frBox = el('div', { class: 'now-block' },
+    el('div', { class: 'now-block-label' }, t('now_friends')));
+  if (!friends.length) {
+    frBox.appendChild(el('div', { class: 'now-empty' }, t('now_no_friends')));
+  } else for (const f of friends) {
+    const fc = playingNow(f.ids || [], day, min);
+    const fnext = (f.ids || []).map(id => concertById[id])
+      .filter(c => c && c.d === day && toMin(c.s) > min)
+      .sort((a, b) => toMin(a.s) - toMin(b.s))[0];
+    let meta;
+    if (fc) meta = el('div', { class: 'm' }, fc.n + ' · ' + (stageById[fc.st]?.label || ''));
+    else if (fnext) meta = el('div', { class: 'm dim' }, t('now_friend_next', { n: fnext.n, m: toMin(fnext.s) - min }));
+    else meta = el('div', { class: 'm dim' }, t('now_friend_idle'));
+    frBox.appendChild(el('div', { class: 'now-friend' },
+      el('div', { class: 'friend-avatar', style: { background: f.color || '#888' } }, f.name.charAt(0)),
+      el('div', { class: 'now-friend-info' }, el('div', { class: 'n' }, f.name), meta)
+    ));
+  }
+  body.push(frBox);
+
+  body.push(el('div', { class: 'btn-row' },
+    el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close'))));
+  showModal(t('now_title'), body);
+}
+
 function showInfo(c, info) {
   const stage = stageById[c.st];
   const body = [];
@@ -3440,6 +3601,7 @@ $('#identity-btn').onclick = () => openIdentity();
 $('#btn-qr').onclick = openQR;
 $('#btn-friends').onclick = openFriends;
 $('#btn-map').onclick = openMap;
+$('#btn-now').onclick = openNow;
 
 // First-launch identity
 if (!localStorage.getItem('hf_user')) {
