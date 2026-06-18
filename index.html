@@ -1181,38 +1181,38 @@ const CONCERTS = [
   { d:'thu18', st:'ms1', n:'WE CAME AS ROMANS', s:'16:00', e:'16:40', g:'Metalcore' },
   { d:'thu18', st:'ms1', n:'THE PLOT IN YOU', s:'17:30', e:'18:10', g:'Metalcore' },
   { d:'thu18', st:'ms1', n:'BREAKING BENJAMIN', s:'19:05', e:'19:55', g:'Metal Alternatif' },
-  { d:'thu18', st:'ms1', n:'PAPA ROACH', s:'21:20', e:'22:25', g:'Metal Alternatif' },
-  { d:'thu18', st:'ms1', n:'BRING ME THE HORIZON', s:'23:35', e:'00:50', g:'Metalcore' },
+  { d:'thu18', st:'ms1', n:'PAPA ROACH', s:'21:15', e:'22:25', g:'Metal Alternatif', id:'thu18-ms1-2120' },
+  { d:'thu18', st:'ms1', n:'BRING ME THE HORIZON', s:'23:45', e:'01:15', g:'Metalcore', id:'thu18-ms1-2335' },
   // MAINSTAGE 02
   { d:'thu18', st:'ms2', n:'MIKKEY DEE WITH FRIENDS', s:'16:45', e:'17:25', g:"Hard Rock'n'Roll" },
   { d:'thu18', st:'ms2', n:'THE PRETTY RECKLESS', s:'18:15', e:'19:00', g:'Rock Alternatif' },
-  { d:'thu18', st:'ms2', n:'DEEP PURPLE', s:'20:00', e:'21:15', g:'Classic Rock / Hard Rock' },
+  { d:'thu18', st:'ms2', n:'DEEP PURPLE', s:'20:00', e:'21:10', g:'Classic Rock / Hard Rock' },
   { d:'thu18', st:'ms2', n:'ALICE COOPER', s:'22:30', e:'23:30', g:'Hard Rock / Shock Rock' },
-  { d:'thu18', st:'ms2', n:'ALESTORM', s:'00:55', e:'01:45', g:'Pirate Metal' },
+  { d:'thu18', st:'ms2', n:'ALESTORM', s:'01:20', e:'02:10', g:'Pirate Metal', id:'thu18-ms2-0055' },
   // WARZONE
   { d:'thu18', st:'wz', n:'SATANIC SURFERS', s:'16:45', e:'17:25', g:'Punk Rock' },
   { d:'thu18', st:'wz', n:'SHELTER', s:'18:15', e:'19:00', g:'Krishnacore' },
   { d:'thu18', st:'wz', n:'LAGWAGON', s:'20:00', e:'21:00', g:'Punk Rock' },
   { d:'thu18', st:'wz', n:'ALL TIME LOW', s:'22:10', e:'23:10', g:'Pop Punk' },
-  { d:'thu18', st:'wz', n:'SOCIAL DISTORTION', s:'00:30', e:'01:30', g:'Punk Rock' },
+  { d:'thu18', st:'wz', n:'SOCIAL DISTORTION', s:'00:45', e:'01:45', g:'Punk Rock', id:'thu18-wz-0030' },
   // VALLEY
   { d:'thu18', st:'vl', n:'TRUCKFIGHTERS', s:'16:00', e:'16:40', g:'Stoner Rock' },
   { d:'thu18', st:'vl', n:'ELDER', s:'17:30', e:'18:10', g:'Stoner / Progressive Rock' },
   { d:'thu18', st:'vl', n:'THE INSPECTOR CLUZO', s:'19:05', e:'19:55', g:'Blues Rock' },
   { d:'thu18', st:'vl', n:'UNCLE ACID AND THE DEADBEATS', s:'21:05', e:'22:05', g:'Doom Psychédélique' },
-  { d:'thu18', st:'vl', n:'KADAVAR', s:'23:15', e:'00:25', g:'Stoner Rock' },
+  { d:'thu18', st:'vl', n:'KADAVAR', s:'23:45', e:'00:45', g:'Stoner Rock', id:'thu18-vl-2315' },
   // TEMPLE
   { d:'thu18', st:'tp', n:'PERCHTA', s:'16:45', e:'17:25', g:'Folk Black Metal' },
   { d:'thu18', st:'tp', n:'WINTERFYLLETH', s:'18:15', e:'19:00', g:'Black Metal' },
   { d:'thu18', st:'tp', n:'BORKNAGAR', s:'20:00', e:'21:00', g:'Viking / Epic Black Metal' },
   { d:'thu18', st:'tp', n:'SKÁLD', s:'22:10', e:'23:10', g:'Neo Folk' },
-  { d:'thu18', st:'tp', n:'FEUERSCHWANZ', s:'00:30', e:'01:30', g:'Folk Metal' },
+  { d:'thu18', st:'tp', n:'FEUERSCHWANZ', s:'01:00', e:'02:00', g:'Folk Metal', id:'thu18-tp-0030' },
   // ALTAR
   { d:'thu18', st:'al', n:'SKAPHOS', s:'16:00', e:'16:40', g:'Black Death' },
   { d:'thu18', st:'al', n:'DEVANGELIC', s:'17:30', e:'18:10', g:'Brutal Death Metal' },
   { d:'thu18', st:'al', n:'RIVERS OF NIHIL', s:'19:05', e:'19:55', g:'Death Metal Progressif' },
   { d:'thu18', st:'al', n:'THE HALO EFFECT', s:'21:05', e:'22:05', g:'Metal Mélodique' },
-  { d:'thu18', st:'al', n:'IGORRR', s:'23:15', e:'00:25', g:'Breakcore Baroque' },
+  { d:'thu18', st:'al', n:'IGORRR', s:'23:45', e:'00:55', g:'Breakcore Baroque', id:'thu18-al-2315' },
   // HELLSTAGE jeudi
   { d:'thu18', st:'hs', n:'ASH TWIN PROJECT', s:'12:30', e:'13:10', g:'metal progressif' },
   { d:'thu18', st:'hs', n:'CORRUPTION PACT', s:'13:40', e:'14:20', g:'hardcore / death metal' },
@@ -1533,7 +1533,9 @@ const CONCERTS = [
 ];
 
 // Assign stable IDs
-CONCERTS.forEach(c => { c.id = `${c.d}-${c.st}-${c.s.replace(':','')}`; });
+// id derives from start time, but a few sets get rescheduled day-of (RO updates).
+// An explicit `id` on a concert pins it so saved/shared plannings survive the move.
+CONCERTS.forEach(c => { c.id = c.id || `${c.d}-${c.st}-${c.s.replace(':','')}`; });
 
 // Band info: keyed by exact concert name (c.n). sp = Spotify URL or null.
 const INFO = {
