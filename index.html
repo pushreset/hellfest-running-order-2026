@@ -1754,6 +1754,17 @@ function toMin(t) {
 }
 function fmtRange(s, e) { return `${s}\n${e}`; }
 
+// Festival day a real timestamp belongs to. Before 06:00 still counts as the
+// previous calendar day, whose sets run past midnight (e.g. Thursday's night
+// ends ~02:00 Friday morning). Same 06:00 threshold as toMin(). Returns the
+// DAYS entry or null.
+function festivalDayFor(date) {
+  const ref = new Date(date);
+  if (ref.getHours() < 6) ref.setDate(ref.getDate() - 1);
+  const s = `${ref.getFullYear()}-${String(ref.getMonth()+1).padStart(2,'0')}-${String(ref.getDate()).padStart(2,'0')}`;
+  return DAYS.find(x => x.date === s) || null;
+}
+
 // Current "now" position for the timeline.
 // Returns { dayId, min, hm } if now falls on a festival day, else null.
 // Test override: append ?now=fri19@14:30 to the URL to fake current time.
@@ -1767,9 +1778,7 @@ function getNow() {
     }
   }
   const now = new Date();
-  const yr = now.getFullYear(), mo = now.getMonth()+1, dd = now.getDate();
-  const todayStr = `${yr}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-  const d = DAYS.find(x => x.date === todayStr);
+  const d = festivalDayFor(now);
   if (!d) return null;
   const hm = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   return { dayId: d.id, min: toMin(hm), hm };
@@ -2063,13 +2072,11 @@ applyMigration('2026-06-06-volbeat-behemoth', () => {
   save();
 });
 
-// Returns festival day id if today matches a festival date, else null.
+// Returns festival day id for the current moment, else null.
+// After midnight counts as the previous festival day (see festivalDayFor).
 function todayFestivalDay() {
-  const today = new Date();
-  const yr = today.getFullYear(); const mo = today.getMonth()+1; const dd = today.getDate();
-  const todayStr = `${yr}-${String(mo).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
-  const match = DAYS.find(d => d.date === todayStr);
-  return match ? match.id : null;
+  const d = festivalDayFor(new Date());
+  return d ? d.id : null;
 }
 
 function load(key, fallback) {
