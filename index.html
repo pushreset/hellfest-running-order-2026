@@ -2925,6 +2925,7 @@ function showModal(title, body) {
   $('#modal-root').appendChild(back);
 }
 function closeModal() {
+  stopNowRefresh();
   $('#modal-root').innerHTML = '';
 }
 
@@ -3115,15 +3116,58 @@ function nowRow(c, status) {
   );
 }
 
+// Auto-refresh state for the open NOW modal. Battery-conscious: a single
+// self-rescheduling timeout runs ONLY while the modal is open AND the tab is
+// visible. Going to the background (screen off / app switch) clears it, so no
+// work happens off-screen; returning refreshes immediately. No permanent timer.
+let nowRefresh = null;
+const NOW_REFRESH_MS = 60000;
+
+function stopNowRefresh() {
+  if (!nowRefresh) return;
+  clearTimeout(nowRefresh.timer);
+  document.removeEventListener('visibilitychange', nowRefresh.onVis);
+  nowRefresh = null;
+}
+
+function refreshNowBody() {
+  const bodyEl = $('#modal-root .modal-body');
+  if (!bodyEl) { stopNowRefresh(); return; }  // modal closed/replaced
+  bodyEl.innerHTML = '';
+  buildNowBody().forEach(c => bodyEl.appendChild(c));
+}
+
+function startNowRefresh() {
+  stopNowRefresh();
+  const tick = () => {
+    if (document.hidden) return;  // paused; visibility handler resumes
+    refreshNowBody();
+    if (nowRefresh) nowRefresh.timer = setTimeout(tick, NOW_REFRESH_MS);
+  };
+  const onVis = () => {
+    if (!nowRefresh) return;
+    clearTimeout(nowRefresh.timer);
+    if (document.hidden) return;        // background → stop, save battery
+    refreshNowBody();                   // foreground → catch up now
+    nowRefresh.timer = setTimeout(tick, NOW_REFRESH_MS);
+  };
+  document.addEventListener('visibilitychange', onVis);
+  nowRefresh = { timer: setTimeout(tick, NOW_REFRESH_MS), onVis };
+}
+
 function openNow() {
+  showModal(t('now_title'), buildNowBody());
+  startNowRefresh();
+}
+
+function buildNowBody() {
   const now = getNow();
   if (!now) {
-    showModal(t('now_title'), [
+    return [
       el('p', {}, t('now_off')),
       el('div', { class: 'btn-row' },
         el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close')))
-    ]);
-    return;
+    ];
   }
   const day = now.dayId, min = now.min;
   const body = [el('div', { class: 'now-head' }, '● ' + dayLabel(dayById[day]) + ' · ' + now.hm)];
@@ -3178,7 +3222,7 @@ function openNow() {
 
   body.push(el('div', { class: 'btn-row' },
     el('button', { class: 'btn ghost', onClick: closeModal }, t('btn_close'))));
-  showModal(t('now_title'), body);
+  return body;
 }
 
 function showInfo(c, info) {
